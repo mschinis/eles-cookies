@@ -6,7 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 const navLinks = [
   { label: "About", href: "/#about" },
   { label: "Menu", href: "/#menu" },
-  { label: "Gallery", href: "/#gallery" },
+  { label: "Shop", href: "/products" },
   { label: "Order", href: "/order" },
   { label: "Contact", href: "/#contact" },
 ];
@@ -46,7 +46,7 @@ export default function Navbar() {
       className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-8 py-5"
     >
       <a
-        href="#"
+        href="/"
         className="font-display text-xl font-bold tracking-tight text-cocoa"
       >
         Ele&apos;s Cookies
