@@ -3,45 +3,7 @@ import { useEffect, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-const flavours = [
-  {
-    name: "Classic Chocolate Chip",
-    description:
-      "Golden-edged, chewy centres loaded with premium milk chocolate chunks.",
-    image: "/images/menu-choc-chip.jpg",
-  },
-  {
-    name: "Brown Butter Caramel",
-    description:
-      "Nutty brown butter dough swirled with ribbons of salted caramel.",
-    image: "/images/menu-caramel.jpg",
-  },
-  {
-    name: "Espresso Dark Chocolate",
-    description:
-      "Bold espresso notes paired with 70% dark chocolate chips.",
-    image: "/images/menu-espresso.jpg",
-  },
-  {
-    name: "Lemon Poppy Seed",
-    description:
-      "Bright citrus zest and poppy seeds in a soft, buttery base.",
-    image: "/images/menu-lemon.jpg",
-  },
-  {
-    name: "Pistachio & Rose",
-    description:
-      "Delicate rose water and crushed pistachios in every delicate bite.",
-    image: "/images/menu-pistachio.jpg",
-  },
-  {
-    name: "Peanut Butter Pretzel",
-    description:
-      "Creamy peanut butter dough with crunchy pretzel pieces and sea salt.",
-    image: "/images/menu-peanut.jpg",
-  },
-];
+import { cookies as flavours } from "@/data/cookies";
 
 export default function Menu() {
   const sectionRef = useRef<HTMLElement>(null);

@@ -3,7 +3,13 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-const navLinks = ["About", "Menu", "Gallery", "Order", "Contact"];
+const navLinks = [
+  { label: "About", href: "/#about" },
+  { label: "Menu", href: "/#menu" },
+  { label: "Gallery", href: "/#gallery" },
+  { label: "Order", href: "/order" },
+  { label: "Contact", href: "/#contact" },
+];
 
 export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
@@ -47,12 +53,12 @@ export default function Navbar() {
       </a>
       <ul className="hidden items-center gap-8 md:flex">
         {navLinks.map((link) => (
-          <li key={link}>
+          <li key={link.label}>
             <a
-              href={`#${link.toLowerCase()}`}
+              href={link.href}
               className="text-sm text-cocoa/80 transition-colors duration-200 hover:text-caramel"
             >
-              {link}
+              {link.label}
             </a>
           </li>
         ))}
