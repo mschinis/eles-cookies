@@ -75,32 +75,21 @@ export async function POST(req: NextRequest) {
   const subtotalCents = calcSubtotal(validBatchSize);
   const shippingCents = calcShipping(validBatchSize);
   const discountRate = BATCH_DISCOUNTS[validBatchSize];
-  const grossCents = batchSize * 200;
-  const discountCents = grossCents - subtotalCents;
+
+  const boxName = discountRate > 0
+    ? `Ele's Cookies — Box of ${batchSize} (${Math.round(discountRate * 100)}% off)`
+    : `Ele's Cookies — Box of ${batchSize}`;
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     {
       price_data: {
-        unit_amount: grossCents,
+        unit_amount: subtotalCents,
         currency: "eur",
-        product_data: { name: `Ele's Cookies — Box of ${batchSize}` },
+        product_data: { name: boxName },
       },
       quantity: 1,
     },
   ];
-
-  if (discountRate > 0) {
-    lineItems.push({
-      price_data: {
-        unit_amount: -discountCents,
-        currency: "eur",
-        product_data: {
-          name: `Volume discount (${Math.round(discountRate * 100)}% off)`,
-        },
-      },
-      quantity: 1,
-    });
-  }
 
   if (shippingCents > 0) {
     lineItems.push({
