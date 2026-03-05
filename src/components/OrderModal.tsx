@@ -7,12 +7,10 @@ type Props = {
 };
 
 export default function OrderModal({ onClose }: Props) {
-  // Lock body scroll while open
+  // Freeze page scroll while modal is open
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    window.dispatchEvent(new Event("lenis:stop"));
+    return () => { window.dispatchEvent(new Event("lenis:start")); };
   }, []);
 
   // Close on Escape
@@ -63,7 +61,7 @@ export default function OrderModal({ onClose }: Props) {
         </div>
 
         {/* Scrollable form */}
-        <div className="overflow-y-auto px-8 pt-8">
+        <div className="min-h-0 flex-1 overflow-y-auto px-8 pt-8" data-lenis-prevent>
           <OrderForm variant="modal" />
         </div>
       </div>

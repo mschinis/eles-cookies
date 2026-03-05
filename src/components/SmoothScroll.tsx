@@ -12,7 +12,9 @@ export default function SmoothScroll({
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const lenis = new Lenis();
+    const lenis = new Lenis({
+      prevent: (node: Element) => node.hasAttribute("data-lenis-prevent"),
+    });
 
     lenis.on("scroll", ScrollTrigger.update);
 
@@ -23,9 +25,16 @@ export default function SmoothScroll({
     gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
+    const onStop = () => lenis.stop();
+    const onStart = () => lenis.start();
+    window.addEventListener("lenis:stop", onStop);
+    window.addEventListener("lenis:start", onStart);
+
     return () => {
       lenis.destroy();
       gsap.ticker.remove(tickerFn);
+      window.removeEventListener("lenis:stop", onStop);
+      window.removeEventListener("lenis:start", onStart);
     };
   }, []);
 

@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+const OrderModal = dynamic(() => import("./OrderModal"), { ssr: false });
+
 const headline = "Handmade with love, baked to order.";
 
 export default function Hero() {
+  const [modalOpen, setModalOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const cookieImgRef = useRef<HTMLDivElement>(null);
   const cookieMedRef = useRef<HTMLDivElement>(null);
@@ -61,6 +65,7 @@ export default function Hero() {
   }, []);
 
   return (
+    <>
     <section
       ref={sectionRef}
       id="hero"
@@ -87,6 +92,7 @@ export default function Hero() {
           className="object-cover"
           priority
         />
+        <div className="absolute inset-0 z-10 bg-cream/20 pointer-events-none" />
       </div>
 
       {/* Medium floating cookie — bottom left */}
@@ -101,6 +107,7 @@ export default function Hero() {
           className="object-cover"
           priority
         />
+        <div className="absolute inset-0 z-10 bg-cream/20 pointer-events-none" />
       </div>
 
       {/* Small floating cookie — bottom centre-right */}
@@ -115,6 +122,7 @@ export default function Hero() {
           className="object-cover"
           priority
         />
+        <div className="absolute inset-0 z-10 bg-cream/20 pointer-events-none" />
       </div>
 
       {/* Content */}
@@ -139,14 +147,32 @@ export default function Hero() {
             Small-batch, made-to-order cookies crafted with quality ingredients
             and a whole lot of heart.
           </p>
-          <a
-            href="#menu"
-            className="inline-block rounded-full bg-caramel px-10 py-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-cocoa"
-          >
-            See our cookies
-          </a>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="#menu"
+              className="inline-block rounded-full bg-caramel px-10 py-4 text-sm font-medium text-white transition-colors duration-300 hover:bg-cocoa"
+            >
+              See our cookies
+            </a>
+
+            {/* Order now — modal on desktop, full page on mobile */}
+            <a
+              href="/order"
+              className="inline-block rounded-full bg-cocoa px-10 py-4 text-sm font-medium text-cream transition-colors duration-300 hover:bg-cocoa/80 sm:hidden"
+            >
+              Order now
+            </a>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="hidden rounded-full bg-cocoa px-10 py-4 text-sm font-medium text-cream transition-colors duration-300 hover:bg-cocoa/80 sm:inline-block"
+            >
+              Order now
+            </button>
+          </div>
         </div>
       </div>
     </section>
+    {modalOpen && <OrderModal onClose={() => setModalOpen(false)} />}
+    </>
   );
 }
