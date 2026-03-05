@@ -1,7 +1,10 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+const OrderModal = dynamic(() => import("./OrderModal"), { ssr: false });
 
 const steps = [
   {
@@ -24,13 +27,8 @@ const steps = [
   },
 ];
 
-const contacts = [
-  { label: "Instagram", handle: "@elescookies", href: "#order" },
-  { label: "WhatsApp", handle: "+44 000 000 0000", href: "#order" },
-  { label: "Email", handle: "hello@elescookies.com", href: "#order" },
-];
-
 export default function HowToOrder() {
+  const [modalOpen, setModalOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -125,26 +123,38 @@ export default function HowToOrder() {
           className="rounded-3xl bg-white/5 p-8 md:p-12"
           style={{ opacity: 0 }}
         >
-          <h3 className="mb-8 text-center font-display text-2xl font-semibold text-white">
-            Get in touch
+          <h3 className="mb-3 text-center font-display text-2xl font-semibold text-white">
+            Ready to order?
           </h3>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {contacts.map((c) => (
-              <a
-                key={c.label}
-                href={c.href}
-                className="group flex flex-col items-center gap-2 rounded-2xl border border-white/10 p-6 text-center transition-colors duration-200 hover:border-caramel/40 hover:bg-white/5"
-              >
-                <span className="text-xs font-medium uppercase tracking-widest text-caramel">
-                  {c.label}
-                </span>
-                <span className="text-sm text-white/70 group-hover:text-white transition-colors duration-200">
-                  {c.handle}
-                </span>
-              </a>
-            ))}
+          <p className="mb-8 text-center text-sm text-white/50">
+            Place a retail order online, or get in touch about wholesale pricing.
+          </p>
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            {/* Order now — modal on desktop, full page on mobile */}
+            <a
+              href="/order"
+              className="block w-full rounded-full bg-caramel px-8 py-3.5 text-center text-sm font-semibold text-white transition-colors hover:bg-caramel/90 sm:hidden"
+            >
+              Order now
+            </a>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="hidden w-full rounded-full bg-caramel px-8 py-3.5 text-center text-sm font-semibold text-white transition-colors hover:bg-caramel/90 sm:block sm:w-auto"
+            >
+              Order now
+            </button>
+
+            {/* Wholesale enquiries */}
+            <a
+              href="mailto:hello@elescookies.com?subject=Wholesale%20Enquiry"
+              className="w-full rounded-full border border-white/20 px-8 py-3.5 text-center text-sm font-semibold text-white transition-colors hover:border-white/40 hover:bg-white/5 sm:w-auto"
+            >
+              Wholesale enquiries
+            </a>
           </div>
         </div>
+
+        {modalOpen && <OrderModal onClose={() => setModalOpen(false)} />}
       </div>
     </section>
   );
