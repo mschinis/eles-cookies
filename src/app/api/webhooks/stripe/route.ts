@@ -82,13 +82,13 @@ export async function POST(req: NextRequest) {
 
     await Promise.all([
       resend.emails.send({
-        from: "Ele's Cookies <orders@elescookies.com>",
+        from: "Ele's Cookies <elescookies@emails.codelia.studio>",
         to: customerEmail,
         subject: "Your Ele's Cookies order is confirmed",
         html: confirmationHtml,
       }),
       resend.emails.send({
-        from: "Ele's Cookies <orders@elescookies.com>",
+        from: "Ele's Cookies <elescookies@emails.codelia.studio>",
         to: process.env.OWNER_EMAIL!,
         subject: `New order — Box of ${batchSize} cookies`,
         html: notificationHtml,
