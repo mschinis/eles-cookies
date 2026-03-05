@@ -19,6 +19,10 @@ export async function POST(req: NextRequest) {
     items: OrderItem[];
     customerName: string;
     customerEmail: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    postalCode: string;
     notes?: string;
   };
 
@@ -28,7 +32,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { batchSize, items, customerName, customerEmail, notes } = body;
+  const { batchSize, items, customerName, customerEmail, addressLine1, addressLine2, city, postalCode, notes } = body;
 
   // Validate batchSize
   if (!(BATCH_SIZES as readonly number[]).includes(batchSize)) {
@@ -114,11 +118,26 @@ export async function POST(req: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
-    shipping_address_collection: { allowed_countries: ["CY"] },
     customer_email: customerEmail,
+    payment_intent_data: {
+      shipping: {
+        name: customerName,
+        address: {
+          line1: addressLine1,
+          ...(addressLine2 ? { line2: addressLine2 } : {}),
+          city,
+          postal_code: postalCode,
+          country: "CY",
+        },
+      },
+    },
     metadata: {
       customerName,
       customerEmail,
+      addressLine1,
+      addressLine2: addressLine2 ?? "",
+      city,
+      postalCode,
       notes: notes ?? "",
       items: JSON.stringify(items),
       batchSize: String(batchSize),

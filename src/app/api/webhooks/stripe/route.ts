@@ -51,15 +51,15 @@ export async function POST(req: NextRequest) {
       return { ...item, name: cookie?.name };
     });
 
-    // Build shipping address if Stripe has collected it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sessionAny = session as any;
-    const addr = sessionAny?.shipping_details?.address;
-    const shippingAddress: string | undefined = addr
-      ? [addr.line1, addr.line2, addr.city, addr.postal_code, addr.country]
-          .filter(Boolean)
-          .join(", ")
-      : undefined;
+    const shippingAddress = [
+      meta.addressLine1,
+      meta.addressLine2,
+      meta.city,
+      meta.postalCode,
+      "Cyprus",
+    ]
+      .filter(Boolean)
+      .join(", ");
 
     const confirmationHtml = renderOrderConfirmation({
       customerName,

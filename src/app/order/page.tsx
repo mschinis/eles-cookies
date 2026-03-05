@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, useRef, Suspense } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -27,6 +27,10 @@ function CanceledNotice() {
   );
 }
 
+type FieldErrors = Partial<
+  Record<"name" | "email" | "address1" | "city" | "postalCode", string>
+>;
+
 export default function OrderPage() {
   const router = useRouter();
 
@@ -36,9 +40,20 @@ export default function OrderPage() {
   );
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  const cookiePickerRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const address1Ref = useRef<HTMLInputElement>(null);
+  const cityRef = useRef<HTMLInputElement>(null);
+  const postalRef = useRef<HTMLInputElement>(null);
 
   const totalSelected = useMemo(
     () => Object.values(quantities).reduce((a, b) => a + b, 0),
@@ -61,11 +76,37 @@ export default function OrderPage() {
   }
 
   async function handleCheckout() {
-    setError(null);
-    if (!customerName.trim() || !customerEmail.trim()) {
-      setError("Please enter your name and email.");
+    if (!isComplete) {
+      cookiePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
+
+    const errors: FieldErrors = {};
+
+    if (!customerName.trim()) errors.name = "Please enter your name.";
+    if (!customerEmail.trim()) {
+      errors.email = "Please enter your email.";
+    } else if (!/\S+@\S+\.\S+/.test(customerEmail)) {
+      errors.email = "Please enter a valid email address.";
+    }
+    if (!addressLine1.trim()) errors.address1 = "Please enter your street address.";
+    if (!city.trim()) errors.city = "Please enter your city.";
+    if (!postalCode.trim()) errors.postalCode = "Please enter your postal code.";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstRef =
+        errors.name ? nameRef :
+        errors.email ? emailRef :
+        errors.address1 ? address1Ref :
+        errors.city ? cityRef :
+        postalRef;
+      firstRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstRef.current?.focus();
+      return;
+    }
+
+    setFieldErrors({});
     const items = Object.entries(quantities)
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => ({ id, qty }));
@@ -75,16 +116,31 @@ export default function OrderPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ batchSize, items, customerName, customerEmail, notes }),
+        body: JSON.stringify({
+          batchSize,
+          items,
+          customerName,
+          customerEmail,
+          addressLine1,
+          addressLine2,
+          city,
+          postalCode,
+          notes,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       router.push(data.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setFieldErrors({ name: err instanceof Error ? err.message : "Something went wrong" });
       setLoading(false);
     }
   }
+
+  const inputClass = (hasError: boolean) =>
+    `w-full rounded-xl border bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:outline-none transition-colors ${
+      hasError ? "border-red-400 focus:border-red-400" : "border-sand focus:border-caramel"
+    }`;
 
   return (
     <main className="min-h-screen bg-cream pt-24 pb-32">
@@ -164,7 +220,7 @@ export default function OrderPage() {
         </section>
 
         {/* Step 2 — Cookie picker */}
-        <section className="mb-12">
+        <section ref={cookiePickerRef} className="mb-12">
           <h2 className="mb-6 font-display text-2xl font-semibold text-cocoa">
             2. Mix your flavours
           </h2>
@@ -240,37 +296,133 @@ export default function OrderPage() {
           </div>
         </section>
 
-        {/* Customer details — shown once box is full */}
-        {isComplete && (
-          <section className="mb-12">
+        {/* Customer details */}
+        <section className="mb-12">
             <h2 className="mb-6 font-display text-2xl font-semibold text-cocoa">
               3. Your details
             </h2>
             <div className="flex flex-col gap-4">
+              {/* Name */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-cocoa">
                   Name <span className="text-caramel">*</span>
                 </label>
                 <input
+                  ref={nameRef}
                   type="text"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined }));
+                  }}
                   placeholder="Elena Papadopoulos"
-                  className="w-full rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
+                  className={inputClass(!!fieldErrors.name)}
                 />
+                {fieldErrors.name && (
+                  <p className="mt-1 text-xs text-red-500">{fieldErrors.name}</p>
+                )}
               </div>
+
+              {/* Email */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-cocoa">
                   Email <span className="text-caramel">*</span>
                 </label>
                 <input
+                  ref={emailRef}
                   type="email"
                   value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
+                  }}
                   placeholder="elena@example.com"
-                  className="w-full rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
+                  className={inputClass(!!fieldErrors.email)}
+                />
+                {fieldErrors.email && (
+                  <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>
+                )}
+              </div>
+
+              {/* Address line 1 */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                  Street address <span className="text-caramel">*</span>
+                </label>
+                <input
+                  ref={address1Ref}
+                  type="text"
+                  value={addressLine1}
+                  onChange={(e) => {
+                    setAddressLine1(e.target.value);
+                    if (fieldErrors.address1) setFieldErrors((p) => ({ ...p, address1: undefined }));
+                  }}
+                  placeholder="123 Makarios Avenue"
+                  className={inputClass(!!fieldErrors.address1)}
+                />
+                {fieldErrors.address1 && (
+                  <p className="mt-1 text-xs text-red-500">{fieldErrors.address1}</p>
+                )}
+              </div>
+
+              {/* Address line 2 */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                  Apartment, floor, etc.{" "}
+                  <span className="text-cocoa/40">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="Apt 4B"
+                  className={inputClass(false)}
                 />
               </div>
+
+              {/* City + Postal code */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                    City <span className="text-caramel">*</span>
+                  </label>
+                  <input
+                    ref={cityRef}
+                    type="text"
+                    value={city}
+                    onChange={(e) => {
+                      setCity(e.target.value);
+                      if (fieldErrors.city) setFieldErrors((p) => ({ ...p, city: undefined }));
+                    }}
+                    placeholder="Limassol"
+                    className={inputClass(!!fieldErrors.city)}
+                  />
+                  {fieldErrors.city && (
+                    <p className="mt-1 text-xs text-red-500">{fieldErrors.city}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                    Postal code <span className="text-caramel">*</span>
+                  </label>
+                  <input
+                    ref={postalRef}
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => {
+                      setPostalCode(e.target.value);
+                      if (fieldErrors.postalCode) setFieldErrors((p) => ({ ...p, postalCode: undefined }));
+                    }}
+                    placeholder="3036"
+                    className={inputClass(!!fieldErrors.postalCode)}
+                  />
+                  {fieldErrors.postalCode && (
+                    <p className="mt-1 text-xs text-red-500">{fieldErrors.postalCode}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-cocoa">
                   Notes / special requests{" "}
@@ -286,14 +438,6 @@ export default function OrderPage() {
               </div>
             </div>
           </section>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
       </div>
 
       {/* Sticky counter bar */}
@@ -329,7 +473,7 @@ export default function OrderPage() {
           </div>
           <button
             onClick={handleCheckout}
-            disabled={!isComplete || loading}
+            disabled={loading}
             className="rounded-full bg-caramel px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-caramel/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? "Redirecting…" : "Place Order"}
