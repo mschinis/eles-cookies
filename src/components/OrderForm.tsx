@@ -61,6 +61,27 @@ export default function OrderForm({ variant }: Props) {
   const shippingCents = calcShipping(batchSize);
   const totalCents = calcTotal(batchSize);
   const discountRate = BATCH_DISCOUNTS[batchSize];
+
+  // Savings vs full (undiscounted) price
+  const saving24 = 24 * 200 - calcSubtotal(24); // €4.80
+  const saving48 = 48 * 200 - calcSubtotal(48); // €14.40
+
+  const upsell =
+    batchSize === 12
+      ? {
+          message: "Add 12 more and save 10%",
+          detail: `${centsToEur(calcTotal(24))} for 24 cookies — you save ${centsToEur(saving24)}`,
+          nextSize: 24 as BatchSize,
+          cta: "Upgrade to 24",
+        }
+      : batchSize === 24
+      ? {
+          message: "Add 24 more for 15% off + free delivery",
+          detail: `${centsToEur(calcTotal(48))} for 48 cookies — you save ${centsToEur(saving48)}`,
+          nextSize: 48 as BatchSize,
+          cta: "Upgrade to 48",
+        }
+      : null;
   const isComplete = totalSelected === batchSize;
 
   function adjustQty(id: string, delta: number) {
@@ -229,6 +250,25 @@ export default function OrderForm({ variant }: Props) {
             );
           })}
         </div>
+
+        {/* Upsell nudge */}
+        {upsell && (
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-caramel/30 bg-caramel/8 px-5 py-4">
+            <div>
+              <p className="text-sm font-semibold text-cocoa">{upsell.message}</p>
+              <p className="mt-0.5 text-xs text-cocoa/60">{upsell.detail}</p>
+            </div>
+            <button
+              onClick={() => {
+                setBatchSize(upsell.nextSize);
+                setQuantities(Object.fromEntries(cookies.map((c) => [c.id, 0])));
+              }}
+              className="shrink-0 rounded-full bg-caramel px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-caramel/90"
+            >
+              {upsell.cta}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Step 2 — Cookie picker */}
