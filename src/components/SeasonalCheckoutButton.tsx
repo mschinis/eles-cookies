@@ -1,7 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Product } from "@/data/products";
+export type SeasonalProduct = {
+  name: string;
+  priceLabel: string;
+  boxSize?: number | null;
+  checkoutItems?: { id: string; qty: number }[] | null;
+};
 
 type FieldErrors = Partial<
   Record<"name" | "email" | "address1" | "city" | "postalCode", string>
@@ -17,7 +22,7 @@ function CheckoutModal({
   product,
   onClose,
 }: {
-  product: Product;
+  product: SeasonalProduct;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -246,7 +251,7 @@ function CheckoutModal({
   );
 }
 
-export default function SeasonalCheckoutButton({ product }: { product: Product }) {
+export default function SeasonalCheckoutButton({ product }: { product: SeasonalProduct }) {
   const [open, setOpen] = useState(false);
   return (
     <>

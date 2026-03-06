@@ -5,10 +5,31 @@ import Footer from "@/components/Footer";
 import OrderTrigger from "@/components/OrderTrigger";
 import SeasonalCheckoutButton from "@/components/SeasonalCheckoutButton";
 import ImageGallery from "./ImageGallery";
-import { products, getProduct } from "@/data/products";
+import { getPayload } from "payload";
+import config from "@payload-config";
+import type { Product, Media } from "@/payload-types";
 
-export function generateStaticParams() {
-  return products.filter((p) => p.isPublished).map((p) => ({ slug: p.slug }));
+export const revalidate = 3600;
+
+async function getProduct(slug: string): Promise<Product | null> {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: "products",
+    where: { slug: { equals: slug }, isPublished: { equals: true } },
+    depth: 1,
+    limit: 1,
+  });
+  return (result.docs[0] as Product) ?? null;
+}
+
+export async function generateStaticParams() {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: "products",
+    where: { isPublished: { equals: true } },
+    limit: 100,
+  });
+  return result.docs.map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({
@@ -17,8 +38,13 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product || !product.isPublished) notFound();
+  const product = await getProduct(slug);
+  if (!product) notFound();
+
+  const imageUrls = (product.images ?? []).map(
+    (item) => (item.image as Media).url ?? ""
+  );
+  const details = (product.details ?? []).map((d) => d.text);
 
   return (
     <>
@@ -38,7 +64,7 @@ export default async function ProductPage({
 
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
             {/* Gallery */}
-            <ImageGallery images={product.images} name={product.name} />
+            <ImageGallery images={imageUrls} name={product.name} />
 
             {/* Info */}
             <div className="flex flex-col">
@@ -63,7 +89,7 @@ export default async function ProductPage({
 
               {/* Details */}
               <ul className="mb-8 space-y-2 border-t border-sand pt-6">
-                {product.details.map((d) => (
+                {details.map((d) => (
                   <li key={d} className="flex items-start gap-2 text-sm text-cocoa/70">
                     <span className="mt-0.5 shrink-0 text-caramel">✓</span>
                     {d}
@@ -97,8 +123,18 @@ export default async function ProductPage({
                     label="Build your box"
                     className="flex-1 items-center justify-center rounded-full bg-caramel px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-caramel/90"
                   />
-                ) : product.isAvailable && product.checkoutItems ? (
-                  <SeasonalCheckoutButton product={product} />
+                ) : product.isAvailable && product.checkoutItems && product.checkoutItems.length > 0 ? (
+                  <SeasonalCheckoutButton
+                    product={{
+                      name: product.name,
+                      priceLabel: product.priceLabel,
+                      boxSize: product.boxSize,
+                      checkoutItems: product.checkoutItems.map((item) => ({
+                        id: item.id,
+                        qty: item.qty ?? 0,
+                      })),
+                    }}
+                  />
                 ) : product.isAvailable ? (
                   <a
                     href={`mailto:hello@elescookies.com?subject=Order%20enquiry%20%E2%80%94%20${encodeURIComponent(product.name)}`}
