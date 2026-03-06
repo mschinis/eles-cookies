@@ -94,10 +94,6 @@ export async function POST(req: NextRequest) {
     qty,
     subtotalCents,
     boxSize: product.boxSize,
-    checkoutItems: product.contents?.map((c) => {
-      const cookie = c.cookie as { slug?: string };
-      return { id: cookie.slug ?? "", qty: c.qty };
-    }) ?? [],
   }));
 
   const session = await stripe.checkout.sessions.create({
