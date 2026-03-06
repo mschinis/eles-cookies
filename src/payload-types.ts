@@ -67,6 +67,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    cookies: Cooky;
     media: Media;
     products: Product;
     'payload-kv': PayloadKv;
@@ -77,6 +78,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    cookies: CookiesSelect<false> | CookiesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -115,6 +117,23 @@ export interface UserAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookies".
+ */
+export interface Cooky {
+  id: string;
+  /**
+   * URL-friendly identifier used as the checkout item ID, e.g. classic-chocolate-chip
+   */
+  slug: string;
+  name: string;
+  description: string;
+  image: string | Media;
+  available?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -189,22 +208,13 @@ export interface Product {
    */
   boxSize?: number | null;
   /**
-   * What's inside — shown on the product detail page
+   * What's inside — shown on the product detail page and used for checkout
    */
   contents?:
     | {
-        name: string;
+        cookie: string | Cooky;
         qty: number;
         id?: string | null;
-      }[]
-    | null;
-  /**
-   * Cookie IDs + quantities sent to /api/checkout
-   */
-  checkoutItems?:
-    | {
-        id: string;
-        qty: number;
       }[]
     | null;
   updatedAt: string;
@@ -260,6 +270,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'cookies';
+        value: string | Cooky;
+      } | null)
+    | ({
         relationTo: 'media';
         value: string | Media;
       } | null)
@@ -312,6 +326,19 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookies_select".
+ */
+export interface CookiesSelect<T extends boolean = true> {
+  slug?: T;
+  name?: T;
+  description?: T;
+  image?: T;
+  available?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -386,15 +413,9 @@ export interface ProductsSelect<T extends boolean = true> {
   contents?:
     | T
     | {
-        name?: T;
+        cookie?: T;
         qty?: T;
         id?: T;
-      };
-  checkoutItems?:
-    | T
-    | {
-        id?: T;
-        qty?: T;
       };
   updatedAt?: T;
   createdAt?: T;

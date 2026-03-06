@@ -7,7 +7,7 @@ import SeasonalCheckoutButton from "@/components/SeasonalCheckoutButton";
 import ImageGallery from "./ImageGallery";
 import { getPayload } from "payload";
 import config from "@payload-config";
-import type { Product, Media } from "@/payload-types";
+import type { Product, Media, Cooky } from "@/payload-types";
 
 export const revalidate = 3600;
 
@@ -16,7 +16,7 @@ async function getProduct(slug: string): Promise<Product | null> {
   const result = await payload.find({
     collection: "products",
     where: { slug: { equals: slug }, isPublished: { equals: true } },
-    depth: 1,
+    depth: 2,
     limit: 1,
   });
   return (result.docs[0] as Product) ?? null;
@@ -45,6 +45,14 @@ export default async function ProductPage({
     (item) => (item.image as Media).url ?? ""
   );
   const details = (product.details ?? []).map((d) => d.text);
+  const contents = (product.contents ?? []).map((item) => ({
+    cookie: item.cookie as Cooky,
+    qty: item.qty,
+  }));
+  const checkoutItems = contents.map((item) => ({
+    id: item.cookie.slug,
+    qty: item.qty ?? 0,
+  }));
 
   return (
     <>
@@ -98,15 +106,15 @@ export default async function ProductPage({
               </ul>
 
               {/* Contents */}
-              {product.contents && product.contents.length > 0 && (
+              {contents.length > 0 && (
                 <div className="mb-8 rounded-2xl bg-sand/30 p-6">
                   <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-caramel">
                     What&apos;s inside
                   </p>
                   <ul className="space-y-2">
-                    {product.contents.map((item) => (
-                      <li key={item.name} className="flex items-center justify-between text-sm">
-                        <span className="text-cocoa">{item.name}</span>
+                    {contents.map((item) => (
+                      <li key={item.cookie.id} className="flex items-center justify-between text-sm">
+                        <span className="text-cocoa">{item.cookie.name}</span>
                         <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-cocoa/60">
                           × {item.qty}
                         </span>
@@ -123,16 +131,13 @@ export default async function ProductPage({
                     label="Build your box"
                     className="flex-1 items-center justify-center rounded-full bg-caramel px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-caramel/90"
                   />
-                ) : product.isAvailable && product.checkoutItems && product.checkoutItems.length > 0 ? (
+                ) : product.isAvailable && checkoutItems.length > 0 ? (
                   <SeasonalCheckoutButton
                     product={{
                       name: product.name,
                       priceLabel: product.priceLabel,
                       boxSize: product.boxSize,
-                      checkoutItems: product.checkoutItems.map((item) => ({
-                        id: item.id,
-                        qty: item.qty ?? 0,
-                      })),
+                      checkoutItems,
                     }}
                   />
                 ) : product.isAvailable ? (

@@ -2,13 +2,14 @@ import sharp from "sharp";
 import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { vercelBlobStorage } from "@payloadcms/storage-vercel-blob";
 import { buildConfig } from "payload";
+import { Cookies } from "./src/collections/Cookies";
 import { Media } from "./src/collections/Media";
 import { Products } from "./src/collections/Products";
 
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || "",
   db: mongooseAdapter({ url: process.env.MONGODB_URI || "" }),
-  collections: [Media, Products],
+  collections: [Cookies, Media, Products],
   plugins: [
     vercelBlobStorage({
       enabled: true,

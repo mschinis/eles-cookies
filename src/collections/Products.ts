@@ -104,32 +104,13 @@ export const Products: CollectionConfig = {
       type: "array",
       admin: {
         condition: (data) => data.type === "seasonal",
-        description: "What's inside — shown on the product detail page",
+        description: "What's inside — shown on the product detail page and used for checkout",
       },
       fields: [
         {
-          name: "name",
-          type: "text",
-          required: true,
-        },
-        {
-          name: "qty",
-          type: "number",
-          required: true,
-        },
-      ],
-    },
-    {
-      name: "checkoutItems",
-      type: "array",
-      admin: {
-        condition: (data) => data.type === "seasonal",
-        description: "Cookie IDs + quantities sent to /api/checkout",
-      },
-      fields: [
-        {
-          name: "id",
-          type: "text",
+          name: "cookie",
+          type: "relationship",
+          relationTo: "cookies",
           required: true,
         },
         {
