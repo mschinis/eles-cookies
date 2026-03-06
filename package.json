@@ -10,6 +10,7 @@
     "lint": "eslint",
     "seed": "npx tsx --env-file=.env.local src/scripts/seed.ts",
     "migrate:cookies": "npx tsx --env-file=.env.local src/scripts/migrate-cookies.ts",
+    "backfill:product-info": "npx tsx --env-file=.env.local src/scripts/backfill-product-info.ts",
     "generate:types": "tsx node_modules/.bin/payload generate:types",
     "generate:importmap": "tsx node_modules/.bin/payload generate:importmap"
   },

@@ -139,5 +139,42 @@ export const Products: CollectionConfig = {
         },
       ],
     },
+    {
+      name: "ingredients",
+      type: "textarea",
+      admin: {
+        description: "Full ingredients list shown in the product accordion",
+      },
+    },
+    {
+      name: "allergens",
+      type: "textarea",
+      admin: {
+        description: 'Allergens this product contains, e.g. "Gluten (wheat flour), Dairy (butter), Eggs, Soy (lecithin)"',
+      },
+    },
+    {
+      name: "mayContain",
+      type: "textarea",
+      admin: {
+        description: 'May contain traces of, e.g. "Tree nuts, Peanuts, Sesame"',
+      },
+    },
+    {
+      name: "nutritionPerCookie",
+      type: "group",
+      admin: {
+        description: "Nutritional values per single cookie",
+      },
+      fields: [
+        { name: "calories", type: "number", admin: { description: "kcal" } },
+        { name: "fat", type: "number", admin: { description: "g" } },
+        { name: "saturatedFat", type: "number", admin: { description: "g" } },
+        { name: "carbohydrates", type: "number", admin: { description: "g" } },
+        { name: "sugars", type: "number", admin: { description: "g" } },
+        { name: "protein", type: "number", admin: { description: "g" } },
+        { name: "salt", type: "number", admin: { description: "g" } },
+      ],
+    },
   ],
 };

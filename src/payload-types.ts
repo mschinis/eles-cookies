@@ -259,6 +259,51 @@ export interface Product {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Full ingredients list shown in the product accordion
+   */
+  ingredients?: string | null;
+  /**
+   * Allergens this product contains, e.g. "Gluten (wheat flour), Dairy (butter), Eggs, Soy (lecithin)"
+   */
+  allergens?: string | null;
+  /**
+   * May contain traces of, e.g. "Tree nuts, Peanuts, Sesame"
+   */
+  mayContain?: string | null;
+  /**
+   * Nutritional values per single cookie
+   */
+  nutritionPerCookie?: {
+    /**
+     * kcal
+     */
+    calories?: number | null;
+    /**
+     * g
+     */
+    fat?: number | null;
+    /**
+     * g
+     */
+    saturatedFat?: number | null;
+    /**
+     * g
+     */
+    carbohydrates?: number | null;
+    /**
+     * g
+     */
+    sugars?: number | null;
+    /**
+     * g
+     */
+    protein?: number | null;
+    /**
+     * g
+     */
+    salt?: number | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -496,6 +541,20 @@ export interface ProductsSelect<T extends boolean = true> {
         cookie?: T;
         qty?: T;
         id?: T;
+      };
+  ingredients?: T;
+  allergens?: T;
+  mayContain?: T;
+  nutritionPerCookie?:
+    | T
+    | {
+        calories?: T;
+        fat?: T;
+        saturatedFat?: T;
+        carbohydrates?: T;
+        sugars?: T;
+        protein?: T;
+        salt?: T;
       };
   updatedAt?: T;
   createdAt?: T;

@@ -8,6 +8,7 @@ import ImageGallery from "./ImageGallery";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Product, Media, Cooky } from "@/payload-types";
+import ProductAccordion from "@/components/ProductAccordion";
 
 export const revalidate = 3600;
 
@@ -118,8 +119,16 @@ export default async function ProductPage({
                 </div>
               )}
 
+              {/* Accordion — ingredients, allergens, nutrition */}
+              <ProductAccordion
+                ingredients={product.ingredients}
+                allergens={product.allergens}
+                mayContain={product.mayContain}
+                nutritionPerCookie={product.nutritionPerCookie}
+              />
+
               {/* CTA */}
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 {product.type === "custom" ? (
                   <OrderTrigger
                     label="Build your box"
