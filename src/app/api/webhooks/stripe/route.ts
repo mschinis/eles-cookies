@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { Resend } from "resend";
+import { getPayload } from "payload";
+import config from "@payload-config";
 import { renderOrderConfirmation } from "@/emails/OrderConfirmation";
 import { renderOwnerNotification } from "@/emails/OwnerNotification";
 import { cookies as cookieData } from "@/data/cookies";
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
     const customerName = meta.customerName ?? "Customer";
     const customerEmail = meta.customerEmail ?? session.customer_email ?? "";
     const notes = meta.notes || undefined;
+    const isGift = meta.isGift === "true";
+    const giftMessage = meta.giftMessage || undefined;
     const batchSize = parseInt(meta.batchSize ?? "0", 10);
     const subtotalCents = parseInt(meta.subtotalCents ?? "0", 10);
     const shippingCents = parseInt(meta.shippingCents ?? "0", 10);
@@ -61,6 +65,52 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
+    // ── Save order to Payload ─────────────────────────────────────────────────
+    try {
+      const payload = await getPayload({ config });
+
+      // Resolve cookie slugs → Payload cookie doc IDs
+      const orderItems: { cookie: string; qty: number }[] = [];
+      for (const item of rawItems) {
+        const result = await payload.find({
+          collection: "cookies",
+          where: { slug: { equals: item.id } },
+          limit: 1,
+        });
+        if (result.docs[0]) {
+          orderItems.push({ cookie: String(result.docs[0].id), qty: item.qty });
+        }
+      }
+
+      await payload.create({
+        collection: "orders",
+        data: {
+          stripeSessionId: session.id,
+          status: "confirmed",
+          customerName,
+          customerEmail,
+          batchSize,
+          items: orderItems,
+          subtotalCents,
+          shippingCents,
+          totalCents,
+          shippingAddress: {
+            line1: meta.addressLine1 ?? "",
+            line2: meta.addressLine2 ?? "",
+            city: meta.city ?? "",
+            postalCode: meta.postalCode ?? "",
+          },
+          notes: notes ?? "",
+          isGift,
+          giftMessage: giftMessage ?? "",
+        },
+      });
+    } catch (err) {
+      // Log but don't fail the webhook — emails still send
+      console.error("Failed to save order to Payload:", err);
+    }
+
+    // ── Send confirmation emails ──────────────────────────────────────────────
     const confirmationHtml = renderOrderConfirmation({
       customerName,
       batchSize,
@@ -68,6 +118,8 @@ export async function POST(req: NextRequest) {
       subtotalCents,
       shippingCents,
       totalCents,
+      isGift,
+      giftMessage,
     });
 
     const notificationHtml = renderOwnerNotification({
@@ -78,6 +130,8 @@ export async function POST(req: NextRequest) {
       notes,
       totalCents,
       shippingAddress,
+      isGift,
+      giftMessage,
     });
 
     await Promise.all([

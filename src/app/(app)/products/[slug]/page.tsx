@@ -5,10 +5,25 @@ import Footer from "@/components/Footer";
 import OrderTrigger from "@/components/OrderTrigger";
 import SeasonalCheckoutButton from "@/components/SeasonalCheckoutButton";
 import ImageGallery from "./ImageGallery";
-import { products, getProduct } from "@/data/products";
+import { getPayload } from "payload";
+import config from "@payload-config";
+import type { Product, Media, Cooky } from "@/payload-types";
 
-export function generateStaticParams() {
-  return products.filter((p) => p.isPublished).map((p) => ({ slug: p.slug }));
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return [];
+}
+
+async function getProduct(slug: string): Promise<Product | null> {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: "products",
+    where: { slug: { equals: slug }, isPublished: { equals: true } },
+    depth: 2,
+    limit: 1,
+  });
+  return (result.docs[0] as Product) ?? null;
 }
 
 export default async function ProductPage({
@@ -17,8 +32,21 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product || !product.isPublished) notFound();
+  const product = await getProduct(slug);
+  if (!product) notFound();
+
+  const imageUrls = (product.images ?? []).map(
+    (item) => (item.image as Media).url ?? ""
+  );
+  const details = (product.details ?? []).map((d) => d.text);
+  const contents = (product.contents ?? []).map((item) => ({
+    cookie: item.cookie as Cooky,
+    qty: item.qty,
+  }));
+  const checkoutItems = contents.map((item) => ({
+    id: item.cookie.slug,
+    qty: item.qty ?? 0,
+  }));
 
   return (
     <>
@@ -38,7 +66,7 @@ export default async function ProductPage({
 
           <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
             {/* Gallery */}
-            <ImageGallery images={product.images} name={product.name} />
+            <ImageGallery images={imageUrls} name={product.name} />
 
             {/* Info */}
             <div className="flex flex-col">
@@ -63,7 +91,7 @@ export default async function ProductPage({
 
               {/* Details */}
               <ul className="mb-8 space-y-2 border-t border-sand pt-6">
-                {product.details.map((d) => (
+                {details.map((d) => (
                   <li key={d} className="flex items-start gap-2 text-sm text-cocoa/70">
                     <span className="mt-0.5 shrink-0 text-caramel">✓</span>
                     {d}
@@ -72,15 +100,15 @@ export default async function ProductPage({
               </ul>
 
               {/* Contents */}
-              {product.contents && product.contents.length > 0 && (
+              {contents.length > 0 && (
                 <div className="mb-8 rounded-2xl bg-sand/30 p-6">
                   <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-caramel">
                     What&apos;s inside
                   </p>
                   <ul className="space-y-2">
-                    {product.contents.map((item) => (
-                      <li key={item.name} className="flex items-center justify-between text-sm">
-                        <span className="text-cocoa">{item.name}</span>
+                    {contents.map((item) => (
+                      <li key={item.cookie.id} className="flex items-center justify-between text-sm">
+                        <span className="text-cocoa">{item.cookie.name}</span>
                         <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-cocoa/60">
                           × {item.qty}
                         </span>
@@ -97,8 +125,15 @@ export default async function ProductPage({
                     label="Build your box"
                     className="flex-1 items-center justify-center rounded-full bg-caramel px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-caramel/90"
                   />
-                ) : product.isAvailable && product.checkoutItems ? (
-                  <SeasonalCheckoutButton product={product} />
+                ) : product.isAvailable && checkoutItems.length > 0 ? (
+                  <SeasonalCheckoutButton
+                    product={{
+                      name: product.name,
+                      priceLabel: product.priceLabel,
+                      boxSize: product.boxSize,
+                      checkoutItems,
+                    }}
+                  />
                 ) : product.isAvailable ? (
                   <a
                     href={`mailto:hello@elescookies.com?subject=Order%20enquiry%20%E2%80%94%20${encodeURIComponent(product.name)}`}

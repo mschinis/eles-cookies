@@ -3,12 +3,46 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderTrigger from "@/components/OrderTrigger";
-import { products } from "@/data/products";
+import { getPayload } from "payload";
+import config from "@payload-config";
+import type { Product, Media } from "@/payload-types";
 
-const customBox = products.find((p) => p.type === "custom" && p.isPublished)!;
-const curatedBoxes = products.filter((p) => p.type === "seasonal" && p.isPublished);
+export const revalidate = 3600;
 
-export default function ProductsPage() {
+async function getProducts() {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: "products",
+    where: { isPublished: { equals: true } },
+    depth: 1,
+    limit: 100,
+  });
+  return result.docs as Product[];
+}
+
+function coverUrl(product: Product): string {
+  return (product.coverImage as Media).url ?? "";
+}
+
+export default async function ProductsPage() {
+  const products = await getProducts();
+  const customBox = products.find((p) => p.type === "custom");
+  const curatedBoxes = products.filter((p) => p.type === "seasonal");
+
+  if (!customBox) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-cream pt-24">
+          <div className="mx-auto max-w-5xl px-8 py-32 text-center">
+            <p className="text-cocoa/50">No products available yet. Check back soon!</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -33,7 +67,7 @@ export default function ProductsPage() {
             <div className="flex flex-col md:flex-row">
               <div className="relative aspect-[4/3] w-full md:aspect-auto md:w-1/2">
                 <Image
-                  src={customBox.coverImage}
+                  src={coverUrl(customBox)}
                   alt={customBox.name}
                   fill
                   className="object-cover"
@@ -55,10 +89,10 @@ export default function ProductsPage() {
                   {customBox.description}
                 </p>
                 <ul className="mb-10 space-y-2">
-                  {customBox.details.map((d) => (
-                    <li key={d} className="flex items-start gap-2 text-sm text-white/60">
+                  {customBox.details?.map((d) => (
+                    <li key={d.text} className="flex items-start gap-2 text-sm text-white/60">
                       <span className="mt-0.5 shrink-0 text-caramel">✓</span>
-                      {d}
+                      {d.text}
                     </li>
                   ))}
                 </ul>
@@ -98,7 +132,7 @@ export default function ProductsPage() {
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <Image
-                      src={product.coverImage}
+                      src={coverUrl(product)}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"

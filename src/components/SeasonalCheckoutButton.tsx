@@ -1,10 +1,15 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Product } from "@/data/products";
+export type SeasonalProduct = {
+  name: string;
+  priceLabel: string;
+  boxSize?: number | null;
+  checkoutItems?: { id: string; qty: number }[] | null;
+};
 
 type FieldErrors = Partial<
-  Record<"name" | "email" | "address1" | "city" | "postalCode", string>
+  Record<"name" | "email" | "address1" | "city" | "postalCode" | "giftMessage", string>
 >;
 
 function inputClass(hasError: boolean) {
@@ -17,7 +22,7 @@ function CheckoutModal({
   product,
   onClose,
 }: {
-  product: Product;
+  product: SeasonalProduct;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -28,6 +33,8 @@ function CheckoutModal({
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [notes, setNotes] = useState("");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -36,6 +43,7 @@ function CheckoutModal({
   const address1Ref = useRef<HTMLInputElement>(null);
   const cityRef = useRef<HTMLInputElement>(null);
   const postalRef = useRef<HTMLInputElement>(null);
+  const giftMessageRef = useRef<HTMLTextAreaElement>(null);
 
   // Freeze Lenis while open
   useEffect(() => {
@@ -61,6 +69,7 @@ function CheckoutModal({
     if (!addressLine1.trim()) errors.address1 = "Please enter your street address.";
     if (!city.trim()) errors.city = "Please enter your city.";
     if (!postalCode.trim()) errors.postalCode = "Please enter your postal code.";
+    if (isGift && !giftMessage.trim()) errors.giftMessage = "Please enter a gift message.";
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -69,7 +78,8 @@ function CheckoutModal({
         errors.email ? emailRef :
         errors.address1 ? address1Ref :
         errors.city ? cityRef :
-        postalRef;
+        errors.postalCode ? postalRef :
+        giftMessageRef;
       firstRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       firstRef.current?.focus();
       return;
@@ -91,6 +101,8 @@ function CheckoutModal({
           city,
           postalCode,
           notes,
+          isGift,
+          giftMessage: isGift ? giftMessage : "",
         }),
       });
       const data = await res.json();
@@ -228,6 +240,33 @@ function CheckoutModal({
                 className="w-full resize-none rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
               />
             </div>
+
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-sand bg-white px-4 py-3">
+              <input
+                type="checkbox"
+                checked={isGift}
+                onChange={(e) => setIsGift(e.target.checked)}
+                className="h-4 w-4 accent-caramel"
+              />
+              <span className="text-sm font-medium text-cocoa">This is a gift</span>
+            </label>
+
+            {isGift && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                  Gift message <span className="text-caramel">*</span>
+                </label>
+                <textarea
+                  ref={giftMessageRef}
+                  value={giftMessage}
+                  onChange={(e) => { setGiftMessage(e.target.value); if (fieldErrors.giftMessage) setFieldErrors(p => ({ ...p, giftMessage: undefined })); }}
+                  placeholder="Happy birthday! Hope these make your day a little sweeter."
+                  rows={3}
+                  className={`w-full resize-none rounded-xl border px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:outline-none transition-colors bg-white ${fieldErrors.giftMessage ? "border-red-400 focus:border-red-400" : "border-sand focus:border-caramel"}`}
+                />
+                {fieldErrors.giftMessage && <p className="mt-1 text-xs text-red-500">{fieldErrors.giftMessage}</p>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -246,7 +285,7 @@ function CheckoutModal({
   );
 }
 
-export default function SeasonalCheckoutButton({ product }: { product: Product }) {
+export default function SeasonalCheckoutButton({ product }: { product: SeasonalProduct }) {
   const [open, setOpen] = useState(false);
   return (
     <>

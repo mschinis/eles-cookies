@@ -8,6 +8,8 @@ type Props = {
   notes?: string;
   totalCents: number;
   shippingAddress?: string;
+  isGift?: boolean;
+  giftMessage?: string;
 };
 
 function eur(cents: number) {
@@ -15,7 +17,7 @@ function eur(cents: number) {
 }
 
 export function renderOwnerNotification(props: Props): string {
-  const { customerName, customerEmail, batchSize, items, notes, totalCents, shippingAddress } = props;
+  const { customerName, customerEmail, batchSize, items, notes, totalCents, shippingAddress, isGift, giftMessage } = props;
 
   const rows = items
     .map(
@@ -37,6 +39,13 @@ export function renderOwnerNotification(props: Props): string {
   const notesBlock = notes
     ? `<p style="margin:0 0 12px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#C1813A">Notes</p>
        <p style="margin:0 0 32px;font-size:14px;line-height:1.6;color:#3D2314;background:#FAF6F1;border-radius:8px;padding:16px">${notes}</p>`
+    : "";
+
+  const giftRow = isGift
+    ? `<tr>
+        <td style="padding:4px 0;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#C1813A;width:100px">Gift</td>
+        <td style="padding:4px 0;font-size:14px;color:#3D2314">Yes${giftMessage ? ` &mdash; &ldquo;${giftMessage}&rdquo;` : ""}</td>
+      </tr>`
     : "";
 
   return `<!DOCTYPE html>
@@ -65,6 +74,7 @@ export function renderOwnerNotification(props: Props): string {
                 </td>
               </tr>
               ${addressRow}
+              ${giftRow}
             </table>
 
             <p style="margin:0 0 12px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#C1813A">Cookie Breakdown</p>
