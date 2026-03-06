@@ -91,6 +91,9 @@ export const Orders: CollectionConfig = {
     {
       name: "shippingAddress",
       type: "group",
+      admin: {
+        position: "sidebar",
+      },
       fields: [
         { name: "line1", type: "text" },
         { name: "line2", type: "text" },
