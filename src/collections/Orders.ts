@@ -22,6 +22,9 @@ export const Orders: CollectionConfig = {
       ],
       admin: {
         position: "sidebar",
+        components: {
+          Cell: "/src/components/admin/StatusCell#StatusCell",
+        },
       },
     },
     {
