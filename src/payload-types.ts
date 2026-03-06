@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     cookies: Cooky;
     media: Media;
+    orders: Order;
     products: Product;
     'payload-kv': PayloadKv;
     users: User;
@@ -80,6 +81,7 @@ export interface Config {
   collectionsSelect: {
     cookies: CookiesSelect<false> | CookiesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -171,6 +173,38 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: string;
+  /**
+   * Stripe Checkout Session ID — used to prevent duplicate records
+   */
+  stripeSessionId: string;
+  status: 'confirmed' | 'fulfilled' | 'cancelled';
+  customerName: string;
+  customerEmail: string;
+  batchSize: number;
+  items: {
+    cookie: string | Cooky;
+    qty: number;
+    id?: string | null;
+  }[];
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  shippingAddress?: {
+    line1?: string | null;
+    line2?: string | null;
+    city?: string | null;
+    postalCode?: string | null;
+  };
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -278,6 +312,10 @@ export interface PayloadLockedDocument {
         value: string | Media;
       } | null)
     | ({
+        relationTo: 'orders';
+        value: string | Order;
+      } | null)
+    | ({
         relationTo: 'products';
         value: string | Product;
       } | null)
@@ -381,6 +419,38 @@ export interface MediaSelect<T extends boolean = true> {
               filename?: T;
             };
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  stripeSessionId?: T;
+  status?: T;
+  customerName?: T;
+  customerEmail?: T;
+  batchSize?: T;
+  items?:
+    | T
+    | {
+        cookie?: T;
+        qty?: T;
+        id?: T;
+      };
+  subtotalCents?: T;
+  shippingCents?: T;
+  totalCents?: T;
+  shippingAddress?:
+    | T
+    | {
+        line1?: T;
+        line2?: T;
+        city?: T;
+        postalCode?: T;
+      };
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
