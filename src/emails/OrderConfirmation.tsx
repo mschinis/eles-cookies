@@ -7,6 +7,7 @@ type Props = {
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
+  trackingUrl: string;
   isGift?: boolean;
   giftMessage?: string;
 };
@@ -16,7 +17,7 @@ function eur(cents: number) {
 }
 
 export function renderOrderConfirmation(props: Props): string {
-  const { customerName, batchSize, items, subtotalCents, shippingCents, totalCents, isGift, giftMessage } = props;
+  const { customerName, batchSize, items, subtotalCents, shippingCents, totalCents, trackingUrl, isGift, giftMessage } = props;
 
   const rows = items
     .map(
@@ -84,10 +85,21 @@ export function renderOrderConfirmation(props: Props): string {
               ${giftMessage ? `<tr><td style="font-size:14px;line-height:1.6;color:#3D2314;font-style:italic">&ldquo;${giftMessage}&rdquo;</td></tr>` : ""}
             </table>` : ""}
 
-            <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#3D2314CC">
+            <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#3D2314CC">
               We&#x27;ll be in touch shortly to arrange delivery. Questions? Reply to this email anytime.
             </p>
-            <p style="margin:24px 0 0;font-size:15px;color:#3D2314">With love,<br><strong>Ele</strong></p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px">
+              <tr>
+                <td align="center">
+                  <a href="${trackingUrl}" style="display:inline-block;background:#C1813A;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:999px">
+                    Track your order
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0;font-size:15px;color:#3D2314">With love,<br><strong>Ele</strong></p>
           </td>
         </tr>
         <tr>

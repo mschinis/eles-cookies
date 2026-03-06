@@ -111,6 +111,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Send confirmation emails ──────────────────────────────────────────────
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+    const trackingUrl = `${baseUrl}/order/track/${session.id}`;
+
     const confirmationHtml = renderOrderConfirmation({
       customerName,
       batchSize,
@@ -118,6 +121,7 @@ export async function POST(req: NextRequest) {
       subtotalCents,
       shippingCents,
       totalCents,
+      trackingUrl,
       isGift,
       giftMessage,
     });
