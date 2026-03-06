@@ -9,7 +9,7 @@ export type SeasonalProduct = {
 };
 
 type FieldErrors = Partial<
-  Record<"name" | "email" | "address1" | "city" | "postalCode", string>
+  Record<"name" | "email" | "address1" | "city" | "postalCode" | "giftMessage", string>
 >;
 
 function inputClass(hasError: boolean) {
@@ -43,6 +43,7 @@ function CheckoutModal({
   const address1Ref = useRef<HTMLInputElement>(null);
   const cityRef = useRef<HTMLInputElement>(null);
   const postalRef = useRef<HTMLInputElement>(null);
+  const giftMessageRef = useRef<HTMLTextAreaElement>(null);
 
   // Freeze Lenis while open
   useEffect(() => {
@@ -68,6 +69,7 @@ function CheckoutModal({
     if (!addressLine1.trim()) errors.address1 = "Please enter your street address.";
     if (!city.trim()) errors.city = "Please enter your city.";
     if (!postalCode.trim()) errors.postalCode = "Please enter your postal code.";
+    if (isGift && !giftMessage.trim()) errors.giftMessage = "Please enter a gift message.";
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -76,7 +78,8 @@ function CheckoutModal({
         errors.email ? emailRef :
         errors.address1 ? address1Ref :
         errors.city ? cityRef :
-        postalRef;
+        errors.postalCode ? postalRef :
+        giftMessageRef;
       firstRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       firstRef.current?.focus();
       return;
@@ -251,15 +254,17 @@ function CheckoutModal({
             {isGift && (
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-cocoa">
-                  Gift message <span className="text-cocoa/40">(optional)</span>
+                  Gift message <span className="text-caramel">*</span>
                 </label>
                 <textarea
+                  ref={giftMessageRef}
                   value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value)}
+                  onChange={(e) => { setGiftMessage(e.target.value); if (fieldErrors.giftMessage) setFieldErrors(p => ({ ...p, giftMessage: undefined })); }}
                   placeholder="Happy birthday! Hope these make your day a little sweeter."
                   rows={3}
-                  className="w-full resize-none rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
+                  className={`w-full resize-none rounded-xl border px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:outline-none transition-colors bg-white ${fieldErrors.giftMessage ? "border-red-400 focus:border-red-400" : "border-sand focus:border-caramel"}`}
                 />
+                {fieldErrors.giftMessage && <p className="mt-1 text-xs text-red-500">{fieldErrors.giftMessage}</p>}
               </div>
             )}
           </div>
