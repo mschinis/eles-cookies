@@ -11,6 +11,10 @@ import type { Product, Media, Cooky } from "@/payload-types";
 
 export const revalidate = 3600;
 
+export async function generateStaticParams() {
+  return [];
+}
+
 async function getProduct(slug: string): Promise<Product | null> {
   const payload = await getPayload({ config });
   const result = await payload.find({
@@ -20,16 +24,6 @@ async function getProduct(slug: string): Promise<Product | null> {
     limit: 1,
   });
   return (result.docs[0] as Product) ?? null;
-}
-
-export async function generateStaticParams() {
-  const payload = await getPayload({ config });
-  const result = await payload.find({
-    collection: "products",
-    where: { isPublished: { equals: true } },
-    limit: 100,
-  });
-  return result.docs.map((p) => ({ slug: p.slug }));
 }
 
 export default async function ProductPage({

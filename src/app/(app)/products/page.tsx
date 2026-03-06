@@ -26,8 +26,22 @@ function coverUrl(product: Product): string {
 
 export default async function ProductsPage() {
   const products = await getProducts();
-  const customBox = products.find((p) => p.type === "custom")!;
+  const customBox = products.find((p) => p.type === "custom");
   const curatedBoxes = products.filter((p) => p.type === "seasonal");
+
+  if (!customBox) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-cream pt-24">
+          <div className="mx-auto max-w-5xl px-8 py-32 text-center">
+            <p className="text-cocoa/50">No products available yet. Check back soon!</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
