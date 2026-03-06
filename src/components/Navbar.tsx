@@ -1,7 +1,71 @@
 "use client";
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// ─── Order dropdown (desktop) ─────────────────────────────────────────────────
+
+function OrderDropdown() {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleEnter() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  }
+
+  function handleLeave() {
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  return (
+    <li className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+      <button className="flex items-center gap-1.5 rounded-full bg-caramel px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-caramel/90">
+        Order
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        >
+          <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full pt-3 z-50">
+          <div className="flex w-72 flex-col gap-2 rounded-2xl bg-white p-3 shadow-xl shadow-cocoa/10 ring-1 ring-cocoa/5">
+            <a
+              href="/products"
+              className="group flex flex-col gap-0.5 rounded-xl p-4 transition-colors hover:bg-sand/40"
+            >
+              <span className="text-sm font-semibold text-cocoa group-hover:text-caramel transition-colors">
+                Shop seasonal boxes
+              </span>
+              <span className="text-xs leading-relaxed text-cocoa/50">
+                Ready-made curated collections, fresh every season.
+              </span>
+            </a>
+            <a
+              href="/order"
+              className="group flex flex-col gap-0.5 rounded-xl bg-caramel/8 p-4 transition-colors hover:bg-caramel/15"
+            >
+              <span className="text-sm font-semibold text-cocoa group-hover:text-caramel transition-colors">
+                Customise your own
+              </span>
+              <span className="text-xs leading-relaxed text-cocoa/50">
+                Mix any flavours, any combination, your way.
+              </span>
+            </a>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+// ─── Mobile menu ──────────────────────────────────────────────────────────────
 
 const MobileMenu = forwardRef<{ close: () => void }, { onClose: () => void }>(
   function MobileMenu({ onClose }, ref) {
@@ -26,8 +90,6 @@ const MobileMenu = forwardRef<{ close: () => void }, { onClose: () => void }>(
     }
 
     useImperativeHandle(ref, () => ({ close }));
-
-    // Store close in selfRef so nav links can call it
     selfRef.current = { close };
 
     useEffect(() => {
@@ -58,7 +120,7 @@ const MobileMenu = forwardRef<{ close: () => void }, { onClose: () => void }>(
               key={link.label}
               ref={(el) => { if (el) itemRefs.current[i] = el; }}
               style={{ opacity: 0 }}
-              className="border-b border-sand/60 last:border-0"
+              className="border-b border-sand/60"
             >
               <a
                 href={link.href}
@@ -69,25 +131,47 @@ const MobileMenu = forwardRef<{ close: () => void }, { onClose: () => void }>(
               </a>
             </li>
           ))}
+
+          {/* Order options — two equal buttons */}
+          <li
+            ref={(el) => { if (el) itemRefs.current[navLinks.length] = el; }}
+            style={{ opacity: 0 }}
+            className="flex flex-col gap-3 pt-7"
+          >
+            <a
+              href="/products"
+              onClick={() => selfRef.current?.close()}
+              className="block rounded-full border border-cocoa/20 px-8 py-4 text-center font-display text-xl font-semibold text-cocoa transition-colors hover:border-caramel hover:text-caramel"
+            >
+              Shop seasonal boxes
+            </a>
+            <a
+              href="/order"
+              onClick={() => selfRef.current?.close()}
+              className="block rounded-full bg-caramel px-8 py-4 text-center font-display text-xl font-semibold text-white transition-colors hover:bg-caramel/90"
+            >
+              Customise your own
+            </a>
+          </li>
         </ul>
       </div>
     );
   }
 );
 
+// ─── Nav links ────────────────────────────────────────────────────────────────
+
 const navLinks = [
   { label: "About", href: "/#about" },
-  { label: "Menu", href: "/#menu" },
-  { label: "Shop", href: "/products" },
-  { label: "Order", href: "/order" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Our Flavours", href: "/#menu" },
 ];
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const menuRef = useRef<{ close: () => void }>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  // stays true while the exit animation is playing so hamburger keeps showing X
   const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
@@ -97,25 +181,20 @@ export default function Navbar() {
       start: "top-=80",
       onEnter: () =>
         gsap.to(navRef.current, {
-          // boxShadow: "0 1px 24px rgba(61,35,20,0.08)",
           duration: 0.4,
           ease: "power2.out",
         }),
       onLeaveBack: () =>
         gsap.to(navRef.current, {
           backgroundColor: "transparent",
-          // boxShadow: "none",
           duration: 0.4,
           ease: "power2.out",
         }),
     });
 
-    return () => {
-      trigger.kill();
-    };
+    return () => { trigger.kill(); };
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -147,6 +226,7 @@ export default function Navbar() {
               </a>
             </li>
           ))}
+          <OrderDropdown />
         </ul>
 
         {/* Hamburger — mobile only */}
@@ -162,21 +242,9 @@ export default function Navbar() {
           className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 md:hidden"
           aria-label={menuVisible ? "Close menu" : "Open menu"}
         >
-          <span
-            className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${
-              menuVisible ? "translate-y-2 rotate-45" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${
-              menuVisible ? "opacity-0" : ""
-            }`}
-          />
-          <span
-            className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${
-              menuVisible ? "-translate-y-2 -rotate-45" : ""
-            }`}
-          />
+          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "translate-y-2 rotate-45" : ""}`} />
+          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "opacity-0" : ""}`} />
+          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "-translate-y-2 -rotate-45" : ""}`} />
         </button>
       </nav>
 

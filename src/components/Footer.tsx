@@ -4,6 +4,10 @@ const socials = [
   { label: "Email", href: "#" },
 ];
 
+const footerLinks = [
+  { label: "FAQ", href: "/faq" },
+];
+
 export default function Footer() {
   return (
     <footer className="bg-cocoa py-12 text-white/60">
@@ -19,6 +23,16 @@ export default function Footer() {
           </div>
 
           <ul className="flex gap-6">
+            {footerLinks.map((l) => (
+              <li key={l.label}>
+                <a
+                  href={l.href}
+                  className="text-sm text-white/50 transition-colors duration-200 hover:text-caramel"
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
             {socials.map((s) => (
               <li key={s.label}>
                 <a
