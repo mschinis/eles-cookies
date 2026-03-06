@@ -1,5 +1,15 @@
 import type { CollectionConfig } from "payload";
 
+async function triggerVercelDeploy() {
+  const url = process.env.VERCEL_DEPLOY_HOOK_URL;
+  if (!url) return;
+  try {
+    await fetch(url, { method: "POST" });
+  } catch (err) {
+    console.error("[Products] Failed to trigger Vercel deploy:", err);
+  }
+}
+
 export const Products: CollectionConfig = {
   slug: "products",
   access: {
@@ -8,6 +18,15 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: "name",
     defaultColumns: ["name", "type", "isPublished", "isAvailable"],
+  },
+  hooks: {
+    afterChange: [
+      async ({ doc }) => {
+        if (doc.isPublished) {
+          await triggerVercelDeploy();
+        }
+      },
+    ],
   },
   fields: [
     {
