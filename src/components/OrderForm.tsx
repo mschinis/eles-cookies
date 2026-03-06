@@ -222,8 +222,10 @@ export default function OrderForm({ variant }: Props) {
               <button
                 key={size}
                 onClick={() => {
+                  if (size < batchSize && totalSelected > size) {
+                    setQuantities(Object.fromEntries(cookies.map((c) => [c.id, 0])));
+                  }
                   setBatchSize(size);
-                  setQuantities(Object.fromEntries(cookies.map((c) => [c.id, 0])));
                 }}
                 className={`relative flex flex-col items-center rounded-2xl border-2 p-6 text-center transition-all duration-200 ${
                   selected
@@ -261,7 +263,6 @@ export default function OrderForm({ variant }: Props) {
             <button
               onClick={() => {
                 setBatchSize(upsell.nextSize);
-                setQuantities(Object.fromEntries(cookies.map((c) => [c.id, 0])));
               }}
               className="shrink-0 rounded-full bg-caramel px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-caramel/90"
             >
