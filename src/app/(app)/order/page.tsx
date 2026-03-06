@@ -24,10 +24,10 @@ export default function OrderPage() {
           {/* Header */}
           <div className="mb-12 pt-8 text-center">
             <h1 className="font-display text-4xl font-bold text-cocoa md:text-5xl">
-              Place an Order
+              Build your box
             </h1>
             <p className="mt-4 text-cocoa/60">
-              Pick your batch size, mix your flavours, and pay securely.
+              Pick your batch size, mix your flavours, and add to your basket.
             </p>
           </div>
 

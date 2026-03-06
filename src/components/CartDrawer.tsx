@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
+import { cookies as cookieData } from "@/data/cookies";
 
 function eur(cents: number) {
   return `€${(cents / 100).toFixed(2)}`;
@@ -46,7 +47,16 @@ function CartStep({ onCheckout }: { onCheckout: () => void }) {
               <div key={item.slug} className="flex items-center gap-4 py-5">
                 <div className="flex-1 min-w-0">
                   <p className="font-display text-sm font-semibold text-cocoa truncate">{item.name}</p>
-                  <p className="mt-0.5 text-xs text-cocoa/50">{item.boxSize} cookies · {eur(item.subtotalCents)} each</p>
+                  {item.customCookies && item.customCookies.length > 0 ? (
+                    <p className="mt-0.5 text-xs leading-snug text-cocoa/50">
+                      {item.customCookies.map((cc) => {
+                        const name = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
+                        return `${name} ×${cc.qty}`;
+                      }).join(" · ")}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-cocoa/50">{item.boxSize} cookies · {eur(item.subtotalCents)} each</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
@@ -163,7 +173,12 @@ function CheckoutStep({ onBack }: { onBack: () => void }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map(({ slug, qty }) => ({ slug, qty })),
+          items: items.map(({ slug, qty, boxSize, customCookies }) => ({
+          slug,
+          qty,
+          boxSize,
+          ...(customCookies ? { customCookies } : {}),
+        })),
           customerName,
           customerEmail,
           addressLine1,

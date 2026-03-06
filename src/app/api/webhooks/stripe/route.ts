@@ -63,6 +63,20 @@ export async function POST(req: NextRequest) {
         const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
         const batchSize = basketMeta.reduce((s, i) => s + (i.boxSize ?? 0) * i.qty, 0);
 
+        // Expand custom box cookies into individual basketItems entries
+        const customBoxCookies: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
+        const basketItems: { productName: string; qty: number; subtotalCents: number }[] = [];
+        for (const i of basketMeta) {
+          if (i.slug === "custom" && customBoxCookies.length > 0) {
+            for (const cc of customBoxCookies) {
+              const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
+              basketItems.push({ productName: cookieName, qty: cc.qty * i.qty, subtotalCents: 0 });
+            }
+          } else {
+            basketItems.push({ productName: i.name, qty: i.qty, subtotalCents: i.subtotalCents });
+          }
+        }
+
         await payload.create({
           collection: "orders",
           data: {
@@ -73,7 +87,7 @@ export async function POST(req: NextRequest) {
             customerEmail,
             batchSize,
             items: [],
-            basketItems: basketMeta.map((i) => ({ productName: i.name, qty: i.qty, subtotalCents: i.subtotalCents })),
+            basketItems,
             subtotalCents,
             shippingCents,
             totalCents,
@@ -123,7 +137,18 @@ export async function POST(req: NextRequest) {
     if (orderType === "basket") {
       type BasketMeta = { slug: string; name: string; qty: number; boxSize: number };
       const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
-      emailItems = basketMeta.map((i) => ({ id: i.slug, qty: i.qty, name: `${i.name} (${i.boxSize} cookies)` }));
+      const customBoxCookiesForEmail: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
+      emailItems = [];
+      for (const i of basketMeta) {
+        if (i.slug === "custom" && customBoxCookiesForEmail.length > 0) {
+          for (const cc of customBoxCookiesForEmail) {
+            const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
+            emailItems.push({ id: cc.id, qty: cc.qty * i.qty, name: cookieName });
+          }
+        } else {
+          emailItems.push({ id: i.slug, qty: i.qty, name: `${i.name} (${i.boxSize} cookies)` });
+        }
+      }
       batchSizeForEmail = basketMeta.reduce((s, i) => s + i.boxSize * i.qty, 0);
     } else {
       const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");

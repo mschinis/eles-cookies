@@ -37,12 +37,23 @@ export default async function SuccessPage({
   const totalCents = subtotalCents + shippingCents;
 
   const isBasket = meta.orderType === "basket";
-  let items: { name: string; qty: number }[];
+  type SummaryItem = { name: string; qty: number; subItems?: { name: string; qty: number }[] };
+  let items: SummaryItem[];
   let batchSize: number;
 
   if (isBasket) {
     const rawItems: { slug: string; name: string; qty: number; boxSize: number }[] = JSON.parse(meta.items ?? "[]");
-    items = rawItems.map(({ name, qty }) => ({ name, qty }));
+    const customBoxCookies: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
+    items = rawItems.map((raw) => {
+      if (raw.slug === "custom" && customBoxCookies.length > 0) {
+        const subItems = customBoxCookies.map((cc) => ({
+          name: cookieData.find((c) => c.id === cc.id)?.name ?? cc.id,
+          qty: cc.qty * raw.qty,
+        }));
+        return { name: raw.name, qty: raw.qty, subItems };
+      }
+      return { name: raw.name, qty: raw.qty };
+    });
     batchSize = rawItems.reduce((s, i) => s + i.boxSize * i.qty, 0);
   } else {
     const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");
@@ -91,12 +102,21 @@ export default async function SuccessPage({
           </div>
           <div className="px-6 py-4">
             {items.map((item) => (
-              <div
-                key={item.name}
-                className="flex items-center justify-between py-2 text-sm"
-              >
-                <span className="text-cocoa">{item.name}</span>
-                <span className="font-semibold text-cocoa">× {item.qty}</span>
+              <div key={item.name} className="py-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-cocoa">{item.name}</span>
+                  <span className="font-semibold text-cocoa">× {item.qty}</span>
+                </div>
+                {item.subItems && (
+                  <ul className="mt-1.5 space-y-0.5 pl-3 border-l-2 border-sand">
+                    {item.subItems.map((sub) => (
+                      <li key={sub.name} className="flex items-center justify-between text-xs text-cocoa/50">
+                        <span>{sub.name}</span>
+                        <span>× {sub.qty}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             ))}
           </div>

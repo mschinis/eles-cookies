@@ -136,6 +136,15 @@ export interface Basket {
         subtotalCents: number;
         boxSize: number;
         qty: number;
+        customCookies?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -470,6 +479,7 @@ export interface BasketsSelect<T extends boolean = true> {
         subtotalCents?: T;
         boxSize?: T;
         qty?: T;
+        customCookies?: T;
         id?: T;
       };
   updatedAt?: T;

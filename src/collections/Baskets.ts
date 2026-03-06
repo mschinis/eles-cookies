@@ -28,6 +28,7 @@ export const Baskets: CollectionConfig = {
         { name: "subtotalCents",  type: "number", required: true },
         { name: "boxSize",        type: "number", required: true },
         { name: "qty",            type: "number", required: true },
+        { name: "customCookies",  type: "json" },
       ],
     },
   ],

@@ -3,14 +3,19 @@ import Stripe from "stripe";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Product } from "@/payload-types";
-import { calcSubtotal, type BatchSize, BATCH_SIZES } from "@/data/cookies";
+import { calcSubtotal, type BatchSize, BATCH_SIZES, cookies as cookieData } from "@/data/cookies";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const FREE_SHIPPING_THRESHOLD = 5000; // €50.00
 const SHIPPING_CENTS = 250;
 
-type BasketItem = { slug: string; qty: number };
+type BasketItem = {
+  slug: string;
+  qty: number;
+  boxSize?: number;
+  customCookies?: { id: string; qty: number }[];
+};
 
 export async function POST(req: NextRequest) {
   let body: {
@@ -40,24 +45,46 @@ export async function POST(req: NextRequest) {
 
   // Look up each product and compute pricing
   const payload = await getPayload({ config });
-  type ResolvedItem = { product: Product; qty: number; subtotalCents: number };
+  type ResolvedItem = {
+    slug: string;
+    name: string;
+    qty: number;
+    subtotalCents: number;
+    boxSize: number;
+    customCookies?: { id: string; qty: number }[];
+  };
   const resolved: ResolvedItem[] = [];
 
   for (const item of items) {
-    const result = await payload.find({
-      collection: "products",
-      where: { slug: { equals: item.slug }, isPublished: { equals: true } },
-      limit: 1,
-    });
-    const product = result.docs[0] as Product | undefined;
-    if (!product) return NextResponse.json({ error: `Product not found: ${item.slug}` }, { status: 400 });
-    if (!product.isAvailable) return NextResponse.json({ error: `${product.name} is not currently available` }, { status: 400 });
-    if (!product.boxSize || !(BATCH_SIZES as readonly number[]).includes(product.boxSize)) {
-      return NextResponse.json({ error: `${product.name} has no valid box size` }, { status: 400 });
+    if (item.slug === "custom") {
+      // Custom-built box — validate box size and compute price server-side
+      if (!item.boxSize || !(BATCH_SIZES as readonly number[]).includes(item.boxSize)) {
+        return NextResponse.json({ error: "Custom box has no valid size" }, { status: 400 });
+      }
+      const subtotalCents = calcSubtotal(item.boxSize as BatchSize);
+      resolved.push({
+        slug: "custom",
+        name: `Custom Box (${item.boxSize} cookies)`,
+        qty: item.qty,
+        subtotalCents,
+        boxSize: item.boxSize,
+        customCookies: item.customCookies,
+      });
+    } else {
+      const result = await payload.find({
+        collection: "products",
+        where: { slug: { equals: item.slug }, isPublished: { equals: true } },
+        limit: 1,
+      });
+      const product = result.docs[0] as Product | undefined;
+      if (!product) return NextResponse.json({ error: `Product not found: ${item.slug}` }, { status: 400 });
+      if (!product.isAvailable) return NextResponse.json({ error: `${product.name} is not currently available` }, { status: 400 });
+      if (!product.boxSize || !(BATCH_SIZES as readonly number[]).includes(product.boxSize)) {
+        return NextResponse.json({ error: `${product.name} has no valid box size` }, { status: 400 });
+      }
+      const subtotalCents = calcSubtotal(product.boxSize as BatchSize);
+      resolved.push({ slug: product.slug, name: product.name, qty: item.qty, subtotalCents, boxSize: product.boxSize });
     }
-
-    const subtotalCents = calcSubtotal(product.boxSize as BatchSize);
-    resolved.push({ product, qty: item.qty, subtotalCents });
   }
 
   const basketSubtotalCents = resolved.reduce((s, i) => s + i.subtotalCents * i.qty, 0);
@@ -65,14 +92,23 @@ export async function POST(req: NextRequest) {
   const totalCents = basketSubtotalCents + shippingCents;
 
   // Build Stripe line items — one per product type
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = resolved.map(({ product, qty, subtotalCents }) => ({
-    price_data: {
-      currency: "eur",
-      unit_amount: subtotalCents,
-      product_data: { name: `${product.name} (${product.boxSize} cookies)` },
-    },
-    quantity: qty,
-  }));
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = resolved.map(({ slug, name, qty, subtotalCents, boxSize, customCookies }) => {
+    const lineItemName = slug === "custom" ? name : `${name} (${boxSize} cookies)`;
+    const description = slug === "custom" && customCookies?.length
+      ? customCookies.map((cc) => {
+          const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
+          return `${cookieName} ×${cc.qty}`;
+        }).join(", ")
+      : undefined;
+    return {
+      price_data: {
+        currency: "eur",
+        unit_amount: subtotalCents,
+        product_data: { name: lineItemName, ...(description ? { description } : {}) },
+      },
+      quantity: qty,
+    };
+  });
 
   if (shippingCents > 0) {
     lineItems.push({
@@ -87,14 +123,16 @@ export async function POST(req: NextRequest) {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
-  // Metadata for the webhook — store basket items as JSON
-  const basketItemsMeta = resolved.map(({ product, qty, subtotalCents }) => ({
-    slug: product.slug,
-    name: product.name,
-    qty,
-    subtotalCents,
-    boxSize: product.boxSize,
+  // Metadata for the webhook — store basket items as JSON (without customCookies to stay under 500 chars)
+  const basketItemsMeta = resolved.map(({ slug, name, qty, subtotalCents, boxSize }) => ({
+    slug, name, qty, subtotalCents, boxSize,
   }));
+
+  // Custom box cookie breakdown stored separately to avoid hitting the 500-char metadata limit
+  const customItem = resolved.find((i) => i.slug === "custom");
+  const customBoxCookies = customItem?.customCookies
+    ? JSON.stringify(customItem.customCookies)
+    : "";
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -122,6 +160,7 @@ export async function POST(req: NextRequest) {
       postalCode,
       notes: notes ?? "",
       items: JSON.stringify(basketItemsMeta),
+      customBoxCookies,
       subtotalCents: String(basketSubtotalCents),
       shippingCents: String(shippingCents),
       totalCents: String(totalCents),
