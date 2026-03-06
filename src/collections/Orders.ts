@@ -11,15 +11,6 @@ export const Orders: CollectionConfig = {
   },
   fields: [
     {
-      name: "stripeSessionId",
-      type: "text",
-      required: true,
-      unique: true,
-      admin: {
-        description: "Stripe Checkout Session ID — used to prevent duplicate records",
-      },
-    },
-    {
       name: "status",
       type: "select",
       required: true,
@@ -29,16 +20,35 @@ export const Orders: CollectionConfig = {
         { label: "Fulfilled", value: "fulfilled" },
         { label: "Cancelled", value: "cancelled" },
       ],
+      admin: {
+        position: "sidebar",
+      },
     },
     {
       name: "customerName",
       type: "text",
       required: true,
+      admin: {
+        position: "sidebar",
+      },
     },
     {
       name: "customerEmail",
       type: "email",
       required: true,
+      admin: {
+        position: "sidebar",
+      },
+    },
+    {
+      name: "stripeSessionId",
+      type: "text",
+      required: true,
+      unique: true,
+      admin: {
+        position: "sidebar",
+        description: "Stripe Checkout Session ID — used to prevent duplicate records",
+      },
     },
     {
       name: "batchSize",
