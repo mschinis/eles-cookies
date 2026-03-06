@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
       resend.emails.send({
         from: "Ele's Cookies <elescookies@emails.codelia.studio>",
         to: process.env.OWNER_EMAIL!,
-        subject: `New order — Box of ${batchSize} cookies`,
+        subject: `New order — Box of ${batchSizeForEmail} cookies`,
         html: notificationHtml,
       }),
     ]);
