@@ -33,6 +33,8 @@ function CheckoutModal({
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [notes, setNotes] = useState("");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -96,6 +98,8 @@ function CheckoutModal({
           city,
           postalCode,
           notes,
+          isGift,
+          giftMessage: isGift ? giftMessage : "",
         }),
       });
       const data = await res.json();
@@ -233,6 +237,31 @@ function CheckoutModal({
                 className="w-full resize-none rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
               />
             </div>
+
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-sand bg-white px-4 py-3">
+              <input
+                type="checkbox"
+                checked={isGift}
+                onChange={(e) => setIsGift(e.target.checked)}
+                className="h-4 w-4 accent-caramel"
+              />
+              <span className="text-sm font-medium text-cocoa">This is a gift</span>
+            </label>
+
+            {isGift && (
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-cocoa">
+                  Gift message <span className="text-cocoa/40">(optional)</span>
+                </label>
+                <textarea
+                  value={giftMessage}
+                  onChange={(e) => setGiftMessage(e.target.value)}
+                  placeholder="Happy birthday! Hope these make your day a little sweeter."
+                  rows={3}
+                  className="w-full resize-none rounded-xl border border-sand bg-white px-4 py-3 text-sm text-cocoa placeholder:text-cocoa/30 focus:border-caramel focus:outline-none"
+                />
+              </div>
+            )}
           </div>
         </div>
 

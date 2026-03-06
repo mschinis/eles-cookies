@@ -105,5 +105,23 @@ export const Orders: CollectionConfig = {
       name: "notes",
       type: "textarea",
     },
+    {
+      name: "isGift",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        position: "sidebar",
+        description: "Order will be packaged as a gift",
+      },
+    },
+    {
+      name: "giftMessage",
+      type: "textarea",
+      admin: {
+        position: "sidebar",
+        condition: (data) => !!data.isGift,
+        description: "Message to include with the gift",
+      },
+    },
   ],
 };

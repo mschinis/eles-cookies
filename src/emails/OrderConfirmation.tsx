@@ -7,6 +7,8 @@ type Props = {
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
+  isGift?: boolean;
+  giftMessage?: string;
 };
 
 function eur(cents: number) {
@@ -14,7 +16,7 @@ function eur(cents: number) {
 }
 
 export function renderOrderConfirmation(props: Props): string {
-  const { customerName, batchSize, items, subtotalCents, shippingCents, totalCents } = props;
+  const { customerName, batchSize, items, subtotalCents, shippingCents, totalCents, isGift, giftMessage } = props;
 
   const rows = items
     .map(
@@ -73,6 +75,14 @@ export function renderOrderConfirmation(props: Props): string {
                 <td style="padding:12px 0 6px;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #E8D9C4;color:#C1813A">${eur(totalCents)}</td>
               </tr>
             </table>
+
+            ${isGift ? `
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAF6F1;border-radius:12px;padding:20px;margin-bottom:32px">
+              <tr>
+                <td style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#C1813A;padding-bottom:8px">Gift order</td>
+              </tr>
+              ${giftMessage ? `<tr><td style="font-size:14px;line-height:1.6;color:#3D2314;font-style:italic">&ldquo;${giftMessage}&rdquo;</td></tr>` : ""}
+            </table>` : ""}
 
             <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#3D2314CC">
               We&#x27;ll be in touch shortly to arrange delivery. Questions? Reply to this email anytime.

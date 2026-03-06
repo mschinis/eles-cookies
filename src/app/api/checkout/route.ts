@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     city: string;
     postalCode: string;
     notes?: string;
+    isGift?: boolean;
+    giftMessage?: string;
   };
 
   try {
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { batchSize, items, customerName, customerEmail, addressLine1, addressLine2, city, postalCode, notes } = body;
+  const { batchSize, items, customerName, customerEmail, addressLine1, addressLine2, city, postalCode, notes, isGift, giftMessage } = body;
 
   // Validate batchSize
   if (!(BATCH_SIZES as readonly number[]).includes(batchSize)) {
@@ -132,6 +134,8 @@ export async function POST(req: NextRequest) {
       batchSize: String(batchSize),
       subtotalCents: String(subtotalCents),
       shippingCents: String(shippingCents),
+      isGift: isGift ? "true" : "false",
+      giftMessage: giftMessage ?? "",
     },
     success_url: `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/order?canceled=1`,

@@ -180,13 +180,13 @@ export interface Media {
  */
 export interface Order {
   id: string;
+  status: 'confirmed' | 'fulfilled' | 'cancelled';
+  customerName: string;
+  customerEmail: string;
   /**
    * Stripe Checkout Session ID — used to prevent duplicate records
    */
   stripeSessionId: string;
-  status: 'confirmed' | 'fulfilled' | 'cancelled';
-  customerName: string;
-  customerEmail: string;
   batchSize: number;
   items: {
     cookie: string | Cooky;
@@ -203,6 +203,14 @@ export interface Order {
     postalCode?: string | null;
   };
   notes?: string | null;
+  /**
+   * Order will be packaged as a gift
+   */
+  isGift?: boolean | null;
+  /**
+   * Message to include with the gift
+   */
+  giftMessage?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -425,10 +433,10 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
-  stripeSessionId?: T;
   status?: T;
   customerName?: T;
   customerEmail?: T;
+  stripeSessionId?: T;
   batchSize?: T;
   items?:
     | T
@@ -449,6 +457,8 @@ export interface OrdersSelect<T extends boolean = true> {
         postalCode?: T;
       };
   notes?: T;
+  isGift?: T;
+  giftMessage?: T;
   updatedAt?: T;
   createdAt?: T;
 }

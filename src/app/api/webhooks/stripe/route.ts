@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
     const customerName = meta.customerName ?? "Customer";
     const customerEmail = meta.customerEmail ?? session.customer_email ?? "";
     const notes = meta.notes || undefined;
+    const isGift = meta.isGift === "true";
+    const giftMessage = meta.giftMessage || undefined;
     const batchSize = parseInt(meta.batchSize ?? "0", 10);
     const subtotalCents = parseInt(meta.subtotalCents ?? "0", 10);
     const shippingCents = parseInt(meta.shippingCents ?? "0", 10);
@@ -99,6 +101,8 @@ export async function POST(req: NextRequest) {
             postalCode: meta.postalCode ?? "",
           },
           notes: notes ?? "",
+          isGift,
+          giftMessage: giftMessage ?? "",
         },
       });
     } catch (err) {
@@ -114,6 +118,8 @@ export async function POST(req: NextRequest) {
       subtotalCents,
       shippingCents,
       totalCents,
+      isGift,
+      giftMessage,
     });
 
     const notificationHtml = renderOwnerNotification({
@@ -124,6 +130,8 @@ export async function POST(req: NextRequest) {
       notes,
       totalCents,
       shippingAddress,
+      isGift,
+      giftMessage,
     });
 
     await Promise.all([
