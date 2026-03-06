@@ -83,6 +83,7 @@ export default function OrderForm({ variant }: Props) {
         }
       : null;
   const isComplete = totalSelected === batchSize;
+  const isOverSelected = totalSelected > batchSize;
 
   function adjustQty(id: string, delta: number) {
     const cookie = cookies.find((c) => c.id === id);
@@ -94,7 +95,7 @@ export default function OrderForm({ variant }: Props) {
   }
 
   async function handleCheckout() {
-    if (!isComplete) {
+    if (!isComplete || isOverSelected) {
       cookiePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
@@ -173,14 +174,16 @@ export default function OrderForm({ variant }: Props) {
         <div className="flex items-center gap-3">
           <span
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-              isComplete ? "bg-green-500 text-white" : "bg-sand text-cocoa"
+              isOverSelected ? "bg-red-500 text-white" : isComplete ? "bg-green-500 text-white" : "bg-sand text-cocoa"
             }`}
           >
             {totalSelected}
           </span>
           <div>
-            <p className="text-xs text-cocoa/50">
-              {totalSelected} / {batchSize} selected
+            <p className={`text-xs ${isOverSelected ? "font-semibold text-red-500" : "text-cocoa/50"}`}>
+              {isOverSelected
+                ? `${totalSelected - batchSize} too many — remove some cookies`
+                : `${totalSelected} / ${batchSize} selected`}
             </p>
             <p className="text-sm font-semibold text-cocoa">
               {centsToEur(totalCents)}{" "}
@@ -221,12 +224,7 @@ export default function OrderForm({ variant }: Props) {
             return (
               <button
                 key={size}
-                onClick={() => {
-                  if (size < batchSize && totalSelected > size) {
-                    setQuantities(Object.fromEntries(cookies.map((c) => [c.id, 0])));
-                  }
-                  setBatchSize(size);
-                }}
+                onClick={() => { setBatchSize(size); }}
                 className={`relative flex flex-col items-center rounded-2xl border-2 p-6 text-center transition-all duration-200 ${
                   selected
                     ? "border-caramel bg-caramel/10 shadow-sm"
