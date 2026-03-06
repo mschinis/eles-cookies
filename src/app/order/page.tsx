@@ -1,6 +1,8 @@
 "use client";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import OrderForm from "@/components/OrderForm";
 
 function CanceledNotice() {
@@ -15,30 +17,28 @@ function CanceledNotice() {
 
 export default function OrderPage() {
   return (
-    <main className="min-h-screen bg-cream pt-24">
-      <div className="mx-auto max-w-3xl px-6">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <a
-            href="/"
-            className="mb-6 inline-block font-display text-xl font-bold tracking-tight text-cocoa"
-          >
-            Ele&apos;s Cookies
-          </a>
-          <h1 className="font-display text-4xl font-bold text-cocoa md:text-5xl">
-            Place an Order
-          </h1>
-          <p className="mt-4 text-cocoa/60">
-            Pick your batch size, mix your flavours, and pay securely.
-          </p>
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-cream pt-24">
+        <div className="mx-auto max-w-3xl px-6">
+          {/* Header */}
+          <div className="mb-12 pt-8 text-center">
+            <h1 className="font-display text-4xl font-bold text-cocoa md:text-5xl">
+              Place an Order
+            </h1>
+            <p className="mt-4 text-cocoa/60">
+              Pick your batch size, mix your flavours, and pay securely.
+            </p>
+          </div>
+
+          <Suspense fallback={null}>
+            <CanceledNotice />
+          </Suspense>
+
+          <OrderForm variant="page" />
         </div>
-
-        <Suspense fallback={null}>
-          <CanceledNotice />
-        </Suspense>
-
-        <OrderForm variant="page" />
-      </div>
-    </main>
+      </main>
+      <Footer />
+    </>
   );
 }
