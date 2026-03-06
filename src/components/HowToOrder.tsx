@@ -9,21 +9,21 @@ const OrderModal = dynamic(() => import("./OrderModal"), { ssr: false });
 const steps = [
   {
     number: "01",
-    title: "Choose your flavours",
+    title: "Pick your box",
     description:
-      "Browse our menu and pick your favourites. Mix and match — minimum order of 12 cookies.",
+      "Choose a curated seasonal box or build your own — mix any flavours in multiples of 4, from 12 to 48 cookies.",
   },
   {
     number: "02",
-    title: "Message us",
+    title: "Pay securely online",
     description:
-      "Reach out via Instagram, WhatsApp, or email with your order details and preferred pickup date.",
+      "Enter your delivery details and pay via card, Apple Pay, or Google Pay. We deliver across Cyprus.",
   },
   {
     number: "03",
-    title: "Receive your cookies",
+    title: "Fresh to your door",
     description:
-      "We'll confirm your order and have it ready fresh. Collection or local delivery available.",
+      "We bake your order fresh and deliver it straight to you. Expect your cookies within 2–3 days.",
   },
 ];
 
@@ -90,7 +90,7 @@ export default function HowToOrder() {
             How to Order
           </span>
           <h2 className="font-display text-4xl font-bold text-white md:text-5xl">
-            Three simple steps
+            Order in minutes
           </h2>
         </div>
 
