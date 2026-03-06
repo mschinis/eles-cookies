@@ -157,8 +157,8 @@ export default async function TrackPage({
             </div>
 
             <div className="divide-y divide-sand px-6">
-              {items.map((item) => (
-                <div key={item.name} className="py-3">
+              {items.map((item, i) => (
+                <div key={i} className="py-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-cocoa">{item.name}</span>
                     <span className="font-semibold text-cocoa">× {item.qty}</span>
