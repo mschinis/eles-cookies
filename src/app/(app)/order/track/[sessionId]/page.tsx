@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Order, Cooky } from "@/payload-types";
+import { cookies as cookieData } from "@/data/cookies";
 
 function centsToEur(cents: number) {
   return `€${(cents / 100).toFixed(2)}`;
@@ -103,8 +104,15 @@ export default async function TrackPage({
 
   const isBasket = order.orderType === "basket";
 
-  const items = isBasket
-    ? (order.basketItems ?? []).map((item) => ({ name: item.productName, qty: item.qty }))
+  type TrackItem = { name: string; qty: number; subItems?: { name: string; qty: number }[] };
+  const items: TrackItem[] = isBasket
+    ? (order.basketItems ?? []).map((item) => {
+        const cc = item.customCookies as { id: string; qty: number }[] | null | undefined;
+        if (cc?.length) {
+          return { name: item.productName, qty: item.qty, subItems: cc.map((c) => ({ name: cookieData.find((d) => d.id === c.id)?.name ?? c.id, qty: c.qty * item.qty })) };
+        }
+        return { name: item.productName, qty: item.qty };
+      })
     : (order.items ?? []).map((item) => ({ name: (item.cookie as Cooky).name, qty: item.qty }));
 
   return (
@@ -150,9 +158,21 @@ export default async function TrackPage({
 
             <div className="divide-y divide-sand px-6">
               {items.map((item) => (
-                <div key={item.name} className="flex items-center justify-between py-3 text-sm">
-                  <span className="text-cocoa">{item.name}</span>
-                  <span className="font-semibold text-cocoa">× {item.qty}</span>
+                <div key={item.name} className="py-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-cocoa">{item.name}</span>
+                    <span className="font-semibold text-cocoa">× {item.qty}</span>
+                  </div>
+                  {item.subItems && (
+                    <ul className="mt-1.5 space-y-0.5 border-l-2 border-sand pl-3">
+                      {item.subItems.map((sub) => (
+                        <li key={sub.name} className="flex items-center justify-between text-xs text-cocoa/50">
+                          <span>{sub.name}</span>
+                          <span>× {sub.qty}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>

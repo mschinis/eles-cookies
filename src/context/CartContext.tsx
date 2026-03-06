@@ -15,7 +15,6 @@ export type CartItem = {
 type CartContextType = {
   items: CartItem[];
   add: (item: Omit<CartItem, "qty">) => void;
-  replace: (item: CartItem) => void;
   remove: (slug: string) => void;
   updateQty: (slug: string, qty: number) => void;
   clear: () => void;
@@ -99,10 +98,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(true);
   }, []);
 
-  const replace = useCallback((item: CartItem) => {
-    setItems((prev) => prev.map((i) => i.slug === item.slug ? item : i));
-  }, []);
-
   const remove = useCallback((slug: string) => {
     setItems((prev) => prev.filter((i) => i.slug !== slug));
   }, []);
@@ -124,7 +119,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartContext.Provider value={{
-      items, add, replace, remove, updateQty, clear,
+      items, add, remove, updateQty, clear,
       isOpen, openCart: () => setIsOpen(true), closeCart: () => setIsOpen(false),
       totalItems, basketSubtotalCents, basketShippingCents, basketTotalCents,
     }}>

@@ -53,29 +53,47 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
     const trackingUrl = `${baseUrl}/order/track/${session.id}`;
 
+    // ── Fetch customCookies from persisted Basket (shared by order-save + email sections) ──────
+    const customCookiesMap = new Map<string, { id: string; qty: number }[]>();
+    if (orderType === "basket" && meta.basketSessionId) {
+      try {
+        const payloadForBasket = await getPayload({ config });
+        const basketResult = await payloadForBasket.find({
+          collection: "baskets",
+          where: { sessionId: { equals: meta.basketSessionId } },
+          limit: 1,
+        });
+        const basket = basketResult.docs[0];
+        if (basket?.items) {
+          for (const item of basket.items) {
+            if (item.customCookies) {
+              customCookiesMap.set(item.slug, item.customCookies as { id: string; qty: number }[]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch basket for customCookies:", err);
+      }
+    }
+
     // ── Save order to Payload ─────────────────────────────────────────────────
     try {
       const payload = await getPayload({ config });
 
       if (orderType === "basket") {
-        // Basket order — items are product-level
         type BasketMeta = { slug: string; name: string; qty: number; subtotalCents: number; boxSize: number };
         const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
         const batchSize = basketMeta.reduce((s, i) => s + (i.boxSize ?? 0) * i.qty, 0);
 
-        // Expand custom box cookies into individual basketItems entries
-        const customBoxCookies: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
-        const basketItems: { productName: string; qty: number; subtotalCents: number }[] = [];
-        for (const i of basketMeta) {
-          if (i.slug === "custom" && customBoxCookies.length > 0) {
-            for (const cc of customBoxCookies) {
-              const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
-              basketItems.push({ productName: cookieName, qty: cc.qty * i.qty, subtotalCents: 0 });
-            }
-          } else {
-            basketItems.push({ productName: i.name, qty: i.qty, subtotalCents: i.subtotalCents });
-          }
-        }
+        const basketItems = basketMeta.map((i) => {
+          const customCookies = customCookiesMap.get(i.slug);
+          return {
+            productName: i.name,
+            qty: i.qty,
+            subtotalCents: i.subtotalCents,
+            ...(customCookies?.length ? { customCookies } : {}),
+          };
+        });
 
         await payload.create({
           collection: "orders",
@@ -138,10 +156,10 @@ export async function POST(req: NextRequest) {
     if (orderType === "basket") {
       type BasketMeta = { slug: string; name: string; qty: number; boxSize: number };
       const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
-      const customBoxCookiesForEmail: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
       emailItems = basketMeta.map((i) => {
-        if (i.slug === "custom" && customBoxCookiesForEmail.length > 0) {
-          const subItems = customBoxCookiesForEmail.map((cc) => ({
+        const customCookies = customCookiesMap.get(i.slug);
+        if (customCookies?.length) {
+          const subItems = customCookies.map((cc) => ({
             name: cookieData.find((c) => c.id === cc.id)?.name ?? cc.id,
             qty: cc.qty * i.qty,
           }));

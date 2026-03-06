@@ -56,14 +56,14 @@ export async function POST(req: NextRequest) {
   const resolved: ResolvedItem[] = [];
 
   for (const item of items) {
-    if (item.slug === "custom") {
-      // Custom-built box — validate box size and compute price server-side
+    if (item.customCookies?.length) {
+      // Custom-built box — identified by customCookies presence; validate box size and compute price server-side
       if (!item.boxSize || !(BATCH_SIZES as readonly number[]).includes(item.boxSize)) {
         return NextResponse.json({ error: "Custom box has no valid size" }, { status: 400 });
       }
       const subtotalCents = calcSubtotal(item.boxSize as BatchSize);
       resolved.push({
-        slug: "custom",
+        slug: item.slug,
         name: `Custom Box (${item.boxSize} cookies)`,
         qty: item.qty,
         subtotalCents,
@@ -91,10 +91,11 @@ export async function POST(req: NextRequest) {
   const shippingCents = basketSubtotalCents >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_CENTS;
   const totalCents = basketSubtotalCents + shippingCents;
 
-  // Build Stripe line items — one per product type
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = resolved.map(({ slug, name, qty, subtotalCents, boxSize, customCookies }) => {
-    const lineItemName = slug === "custom" ? name : `${name} (${boxSize} cookies)`;
-    const description = slug === "custom" && customCookies?.length
+  // Build Stripe line items — one per basket item
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = resolved.map(({ name, qty, subtotalCents, boxSize, customCookies }) => {
+    const isCustom = !!customCookies?.length;
+    const lineItemName = isCustom ? name : `${name} (${boxSize} cookies)`;
+    const description = isCustom
       ? customCookies.map((cc) => {
           const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
           return `${cookieName} ×${cc.qty}`;
@@ -122,17 +123,12 @@ export async function POST(req: NextRequest) {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const basketSessionId = req.headers.get("x-basket-session") ?? "";
 
-  // Metadata for the webhook — store basket items as JSON (without customCookies to stay under 500 chars)
+  // Metadata for the webhook — keep compact; webhook fetches customCookies from the Basket document
   const basketItemsMeta = resolved.map(({ slug, name, qty, subtotalCents, boxSize }) => ({
     slug, name, qty, subtotalCents, boxSize,
   }));
-
-  // Custom box cookie breakdown stored separately to avoid hitting the 500-char metadata limit
-  const customItem = resolved.find((i) => i.slug === "custom");
-  const customBoxCookies = customItem?.customCookies
-    ? JSON.stringify(customItem.customCookies)
-    : "";
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
@@ -159,8 +155,8 @@ export async function POST(req: NextRequest) {
       city,
       postalCode,
       notes: notes ?? "",
+      basketSessionId,
       items: JSON.stringify(basketItemsMeta),
-      customBoxCookies,
       subtotalCents: String(basketSubtotalCents),
       shippingCents: String(shippingCents),
       totalCents: String(totalCents),

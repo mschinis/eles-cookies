@@ -65,8 +65,6 @@ export default function OrderForm({ variant }: Props) {
   const isComplete = totalSelected === batchSize;
   const isOverSelected = totalSelected > batchSize;
 
-  const existingCustom = cart.items.find((i) => i.slug === "custom");
-
   function adjustQty(id: string, delta: number) {
     const cookie = cookies.find((c) => c.id === id);
     if (!cookie?.available) return;
@@ -86,19 +84,13 @@ export default function OrderForm({ variant }: Props) {
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => ({ id, qty }));
 
-    const newItem = {
-      slug: "custom",
+    cart.add({
+      slug: `custom-${Date.now().toString(36)}`,
       name: `Custom Box (${batchSize} cookies)`,
       subtotalCents: calcSubtotal(batchSize),
       boxSize: batchSize,
       customCookies,
-    };
-
-    if (existingCustom) {
-      cart.replace({ ...newItem, qty: existingCustom.qty });
-    } else {
-      cart.add(newItem);
-    }
+    });
 
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -142,7 +134,7 @@ export default function OrderForm({ variant }: Props) {
           onClick={handleAddToBasket}
           className="rounded-full bg-caramel px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-caramel/90"
         >
-          {added ? "Added!" : existingCustom ? "Update basket" : "Add to basket"}
+          {added ? "Added!" : "Add to basket"}
         </button>
       </div>
     </div>

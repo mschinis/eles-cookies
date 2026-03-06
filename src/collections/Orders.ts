@@ -97,6 +97,7 @@ export const Orders: CollectionConfig = {
         { name: "productName", type: "text", required: true },
         { name: "qty", type: "number", required: true },
         { name: "subtotalCents", type: "number", required: true },
+        { name: "customCookies", type: "json", admin: { description: "Cookie breakdown for custom box items" } },
       ],
     },
     {

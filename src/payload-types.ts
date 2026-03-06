@@ -235,6 +235,18 @@ export interface Order {
         productName: string;
         qty: number;
         subtotalCents: number;
+        /**
+         * Cookie breakdown for custom box items
+         */
+        customCookies?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -566,6 +578,7 @@ export interface OrdersSelect<T extends boolean = true> {
         productName?: T;
         qty?: T;
         subtotalCents?: T;
+        customCookies?: T;
         id?: T;
       };
   subtotalCents?: T;

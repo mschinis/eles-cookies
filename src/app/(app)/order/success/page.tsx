@@ -1,5 +1,7 @@
 import Stripe from "stripe";
 import Link from "next/link";
+import { getPayload } from "payload";
+import config from "@payload-config";
 import { cookies as cookieData } from "@/data/cookies";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -43,10 +45,32 @@ export default async function SuccessPage({
 
   if (isBasket) {
     const rawItems: { slug: string; name: string; qty: number; boxSize: number }[] = JSON.parse(meta.items ?? "[]");
-    const customBoxCookies: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
+
+    // Build customCookies map from the persisted Basket document
+    const customCookiesMap = new Map<string, { id: string; qty: number }[]>();
+    if (meta.basketSessionId) {
+      try {
+        const payload = await getPayload({ config });
+        const result = await payload.find({
+          collection: "baskets",
+          where: { sessionId: { equals: meta.basketSessionId } },
+          limit: 1,
+        });
+        const basket = result.docs[0];
+        if (basket?.items) {
+          for (const item of basket.items) {
+            if (item.customCookies) {
+              customCookiesMap.set(item.slug, item.customCookies as { id: string; qty: number }[]);
+            }
+          }
+        }
+      } catch {}
+    }
+
     items = rawItems.map((raw) => {
-      if (raw.slug === "custom" && customBoxCookies.length > 0) {
-        const subItems = customBoxCookies.map((cc) => ({
+      const customCookies = customCookiesMap.get(raw.slug);
+      if (customCookies?.length) {
+        const subItems = customCookies.map((cc) => ({
           name: cookieData.find((c) => c.id === cc.id)?.name ?? cc.id,
           qty: cc.qty * raw.qty,
         }));
@@ -101,8 +125,8 @@ export default async function SuccessPage({
             </p>
           </div>
           <div className="px-6 py-4">
-            {items.map((item) => (
-              <div key={item.name} className="py-2">
+            {items.map((item, i) => (
+              <div key={i} className="py-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-cocoa">{item.name}</span>
                   <span className="font-semibold text-cocoa">× {item.qty}</span>

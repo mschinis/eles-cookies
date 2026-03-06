@@ -168,10 +168,14 @@ function CheckoutStep({ onBack }: { onBack: () => void }) {
 
     setFieldErrors({});
     setLoading(true);
+    const basketSessionId = localStorage.getItem("eles_basket_session") ?? "";
     try {
       const res = await fetch("/api/checkout/basket", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(basketSessionId ? { "x-basket-session": basketSessionId } : {}),
+        },
         body: JSON.stringify({
           items: items.map(({ slug, qty, boxSize, customCookies }) => ({
           slug,
