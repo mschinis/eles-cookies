@@ -180,6 +180,7 @@ export interface Media {
  */
 export interface Order {
   id: string;
+  orderType: 'custom' | 'basket';
   status: 'confirmed' | 'fulfilled' | 'cancelled';
   customerName: string;
   customerEmail: string;
@@ -193,6 +194,17 @@ export interface Order {
     qty: number;
     id?: string | null;
   }[];
+  /**
+   * Product-level line items for basket orders
+   */
+  basketItems?:
+    | {
+        productName: string;
+        qty: number;
+        subtotalCents: number;
+        id?: string | null;
+      }[]
+    | null;
   subtotalCents: number;
   shippingCents: number;
   totalCents: number;
@@ -478,6 +490,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
+  orderType?: T;
   status?: T;
   customerName?: T;
   customerEmail?: T;
@@ -488,6 +501,14 @@ export interface OrdersSelect<T extends boolean = true> {
     | {
         cookie?: T;
         qty?: T;
+        id?: T;
+      };
+  basketItems?:
+    | T
+    | {
+        productName?: T;
+        qty?: T;
+        subtotalCents?: T;
         id?: T;
       };
   subtotalCents?: T;

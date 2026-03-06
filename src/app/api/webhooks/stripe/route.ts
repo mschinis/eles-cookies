@@ -36,88 +36,109 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const meta = session.metadata ?? {};
 
+    const orderType = meta.orderType === "basket" ? "basket" : "custom";
     const customerName = meta.customerName ?? "Customer";
     const customerEmail = meta.customerEmail ?? session.customer_email ?? "";
     const notes = meta.notes || undefined;
     const isGift = meta.isGift === "true";
     const giftMessage = meta.giftMessage || undefined;
-    const batchSize = parseInt(meta.batchSize ?? "0", 10);
     const subtotalCents = parseInt(meta.subtotalCents ?? "0", 10);
     const shippingCents = parseInt(meta.shippingCents ?? "0", 10);
     const totalCents = subtotalCents + shippingCents;
 
-    const rawItems: { id: string; qty: number }[] = JSON.parse(
-      meta.items ?? "[]"
-    );
-
-    const items = rawItems.map((item) => {
-      const cookie = cookieData.find((c) => c.id === item.id);
-      return { ...item, name: cookie?.name };
-    });
-
-    const shippingAddress = [
-      meta.addressLine1,
-      meta.addressLine2,
-      meta.city,
-      meta.postalCode,
-      "Cyprus",
-    ]
+    const shippingAddress = [meta.addressLine1, meta.addressLine2, meta.city, meta.postalCode, "Cyprus"]
       .filter(Boolean)
       .join(", ");
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+    const trackingUrl = `${baseUrl}/order/track/${session.id}`;
 
     // ── Save order to Payload ─────────────────────────────────────────────────
     try {
       const payload = await getPayload({ config });
 
-      // Resolve cookie slugs → Payload cookie doc IDs
-      const orderItems: { cookie: string; qty: number }[] = [];
-      for (const item of rawItems) {
-        const result = await payload.find({
-          collection: "cookies",
-          where: { slug: { equals: item.id } },
-          limit: 1,
-        });
-        if (result.docs[0]) {
-          orderItems.push({ cookie: String(result.docs[0].id), qty: item.qty });
-        }
-      }
+      if (orderType === "basket") {
+        // Basket order — items are product-level
+        type BasketMeta = { slug: string; name: string; qty: number; subtotalCents: number; boxSize: number };
+        const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
+        const batchSize = basketMeta.reduce((s, i) => s + (i.boxSize ?? 0) * i.qty, 0);
 
-      await payload.create({
-        collection: "orders",
-        data: {
-          stripeSessionId: session.id,
-          status: "confirmed",
-          customerName,
-          customerEmail,
-          batchSize,
-          items: orderItems,
-          subtotalCents,
-          shippingCents,
-          totalCents,
-          shippingAddress: {
-            line1: meta.addressLine1 ?? "",
-            line2: meta.addressLine2 ?? "",
-            city: meta.city ?? "",
-            postalCode: meta.postalCode ?? "",
+        await payload.create({
+          collection: "orders",
+          data: {
+            orderType: "basket",
+            stripeSessionId: session.id,
+            status: "confirmed",
+            customerName,
+            customerEmail,
+            batchSize,
+            items: [],
+            basketItems: basketMeta.map((i) => ({ productName: i.name, qty: i.qty, subtotalCents: i.subtotalCents })),
+            subtotalCents,
+            shippingCents,
+            totalCents,
+            shippingAddress: { line1: meta.addressLine1 ?? "", line2: meta.addressLine2 ?? "", city: meta.city ?? "", postalCode: meta.postalCode ?? "" },
+            notes: notes ?? "",
+            isGift,
+            giftMessage: giftMessage ?? "",
           },
-          notes: notes ?? "",
-          isGift,
-          giftMessage: giftMessage ?? "",
-        },
-      });
+        });
+      } else {
+        // Custom box order — items are cookie-level
+        const batchSize = parseInt(meta.batchSize ?? "0", 10);
+        const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");
+        const orderItems: { cookie: string; qty: number }[] = [];
+        for (const item of rawItems) {
+          const result = await payload.find({ collection: "cookies", where: { slug: { equals: item.id } }, limit: 1 });
+          if (result.docs[0]) orderItems.push({ cookie: String(result.docs[0].id), qty: item.qty });
+        }
+        await payload.create({
+          collection: "orders",
+          data: {
+            orderType: "custom",
+            stripeSessionId: session.id,
+            status: "confirmed",
+            customerName,
+            customerEmail,
+            batchSize,
+            items: orderItems,
+            subtotalCents,
+            shippingCents,
+            totalCents,
+            shippingAddress: { line1: meta.addressLine1 ?? "", line2: meta.addressLine2 ?? "", city: meta.city ?? "", postalCode: meta.postalCode ?? "" },
+            notes: notes ?? "",
+            isGift,
+            giftMessage: giftMessage ?? "",
+          },
+        });
+      }
     } catch (err) {
-      // Log but don't fail the webhook — emails still send
       console.error("Failed to save order to Payload:", err);
     }
 
-    // ── Send confirmation emails ──────────────────────────────────────────────
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-    const trackingUrl = `${baseUrl}/order/track/${session.id}`;
+    // ── Build email items list ─────────────────────────────────────────────────
+    let emailItems: { id: string; qty: number; name?: string }[];
+    let batchSizeForEmail: number;
 
+    if (orderType === "basket") {
+      type BasketMeta = { slug: string; name: string; qty: number; boxSize: number };
+      const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
+      emailItems = basketMeta.map((i) => ({ id: i.slug, qty: i.qty, name: `${i.name} (${i.boxSize} cookies)` }));
+      batchSizeForEmail = basketMeta.reduce((s, i) => s + i.boxSize * i.qty, 0);
+    } else {
+      const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");
+      emailItems = rawItems.map((item) => {
+        const cookie = cookieData.find((c) => c.id === item.id);
+        return { ...item, name: cookie?.name };
+      });
+      batchSizeForEmail = parseInt(meta.batchSize ?? "0", 10);
+    }
+
+    // ── Send confirmation emails ──────────────────────────────────────────────
     const confirmationHtml = renderOrderConfirmation({
       customerName,
-      batchSize,
-      items,
+      batchSize: batchSizeForEmail,
+      items: emailItems,
       subtotalCents,
       shippingCents,
       totalCents,
@@ -129,8 +150,8 @@ export async function POST(req: NextRequest) {
     const notificationHtml = renderOwnerNotification({
       customerName,
       customerEmail,
-      batchSize,
-      items,
+      batchSize: batchSizeForEmail,
+      items: emailItems,
       notes,
       totalCents,
       shippingAddress,

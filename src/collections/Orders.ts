@@ -11,6 +11,17 @@ export const Orders: CollectionConfig = {
   },
   fields: [
     {
+      name: "orderType",
+      type: "select",
+      required: true,
+      defaultValue: "custom",
+      options: [
+        { label: "Custom Box", value: "custom" },
+        { label: "Basket", value: "basket" },
+      ],
+      admin: { position: "sidebar" },
+    },
+    {
       name: "status",
       type: "select",
       required: true,
@@ -74,6 +85,19 @@ export const Orders: CollectionConfig = {
           type: "number",
           required: true,
         },
+      ],
+    },
+    {
+      name: "basketItems",
+      type: "array",
+      admin: {
+        description: "Product-level line items for basket orders",
+        condition: (data) => data.orderType === "basket",
+      },
+      fields: [
+        { name: "productName", type: "text", required: true },
+        { name: "qty", type: "number", required: true },
+        { name: "subtotalCents", type: "number", required: true },
       ],
     },
     {

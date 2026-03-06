@@ -3,9 +3,11 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderTrigger from "@/components/OrderTrigger";
+import AddToBasketButton from "@/components/AddToBasketButton";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Product, Media } from "@/payload-types";
+import { calcSubtotal, type BatchSize, BATCH_SIZES } from "@/data/cookies";
 
 export const revalidate = 3600;
 
@@ -124,53 +126,67 @@ export default async function ProductsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {curatedBoxes.map((product) => (
-                <Link
-                  key={product.slug}
-                  href={`/products/${product.slug}`}
-                  className="group block overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <Image
-                      src={coverUrl(product)}
-                      alt={product.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                    {product.badge && (
-                      <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-cocoa backdrop-blur-sm">
-                        {product.badge}
-                      </span>
-                    )}
-                    {!product.isAvailable && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-cocoa/40">
-                        <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-semibold text-cocoa">
-                          Coming Soon
-                        </span>
+              {curatedBoxes.map((product) => {
+                const canAddToBasket = product.isAvailable &&
+                  product.boxSize != null &&
+                  (BATCH_SIZES as readonly number[]).includes(product.boxSize);
+                const subtotalCents = canAddToBasket
+                  ? calcSubtotal(product.boxSize as BatchSize)
+                  : 0;
+
+                return (
+                  <div key={product.slug} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
+                    <Link href={`/products/${product.slug}`} className="block">
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <Image
+                          src={coverUrl(product)}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                        {product.badge && (
+                          <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-cocoa backdrop-blur-sm">
+                            {product.badge}
+                          </span>
+                        )}
+                        {!product.isAvailable && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-cocoa/40">
+                            <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-semibold text-cocoa">
+                              Coming Soon
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <h3 className="mb-1 font-display text-lg font-semibold text-cocoa">
-                      {product.name}
-                    </h3>
-                    <p className="mb-3 line-clamp-2 text-xs text-cocoa/50">
-                      {product.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-caramel">
-                        {product.priceLabel}
-                      </span>
-                      {product.boxSize && (
-                        <span className="text-xs text-cocoa/40">
-                          {product.boxSize} cookies
-                        </span>
+                      <div className="p-6 pb-4">
+                        <h3 className="mb-1 font-display text-lg font-semibold text-cocoa">{product.name}</h3>
+                        <p className="mb-3 line-clamp-2 text-xs text-cocoa/50">{product.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-caramel">{product.priceLabel}</span>
+                          {product.boxSize && <span className="text-xs text-cocoa/40">{product.boxSize} cookies</span>}
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="px-6 pb-6 pt-2">
+                      {canAddToBasket ? (
+                        <AddToBasketButton
+                          slug={product.slug}
+                          name={product.name}
+                          subtotalCents={subtotalCents}
+                          boxSize={product.boxSize!}
+                        />
+                      ) : (
+                        <Link
+                          href={`/products/${product.slug}`}
+                          className="block w-full rounded-full border border-sand py-3 text-center text-sm font-semibold text-cocoa/50 transition-colors hover:border-cocoa/20 hover:text-cocoa"
+                        >
+                          View details
+                        </Link>
                       )}
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -2,6 +2,25 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useCart } from "@/context/CartContext";
+
+function CartIcon() {
+  const { totalItems, openCart } = useCart();
+  return (
+    <button onClick={openCart} aria-label="Open basket" className="relative flex h-9 w-9 items-center justify-center rounded-full text-cocoa/70 transition-colors hover:bg-sand hover:text-cocoa">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 01-8 0" />
+      </svg>
+      {totalItems > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-caramel text-[10px] font-bold text-white">
+          {totalItems > 9 ? "9+" : totalItems}
+        </span>
+      )}
+    </button>
+  );
+}
 
 // ─── Order dropdown (desktop) ─────────────────────────────────────────────────
 
@@ -227,25 +246,29 @@ export default function Navbar() {
             </li>
           ))}
           <OrderDropdown />
+          <CartIcon />
         </ul>
 
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={() => {
-            if (mobileOpen) {
-              menuRef.current?.close();
-            } else {
-              setMobileOpen(true);
-              setMenuVisible(true);
-            }
-          }}
-          className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 md:hidden"
-          aria-label={menuVisible ? "Close menu" : "Open menu"}
-        >
-          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "translate-y-2 rotate-45" : ""}`} />
-          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "opacity-0" : ""}`} />
-          <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "-translate-y-2 -rotate-45" : ""}`} />
-        </button>
+        {/* Cart + hamburger — mobile only */}
+        <div className="flex items-center gap-1 md:hidden">
+          <CartIcon />
+          <button
+            onClick={() => {
+              if (mobileOpen) {
+                menuRef.current?.close();
+              } else {
+                setMobileOpen(true);
+                setMenuVisible(true);
+              }
+            }}
+            className="flex h-9 w-9 flex-col items-center justify-center gap-1.5"
+            aria-label={menuVisible ? "Close menu" : "Open menu"}
+          >
+            <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "translate-y-2 rotate-45" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "opacity-0" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-cocoa transition-all duration-300 ${menuVisible ? "-translate-y-2 -rotate-45" : ""}`} />
+          </button>
+        </div>
       </nav>
 
       {mobileOpen && (

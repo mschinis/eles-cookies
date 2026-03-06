@@ -3,12 +3,13 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderTrigger from "@/components/OrderTrigger";
-import SeasonalCheckoutButton from "@/components/SeasonalCheckoutButton";
 import ImageGallery from "./ImageGallery";
 import { getPayload } from "payload";
 import config from "@payload-config";
 import type { Product, Media, Cooky } from "@/payload-types";
 import ProductAccordion from "@/components/ProductAccordion";
+import AddToBasketButton from "@/components/AddToBasketButton";
+import { calcSubtotal, type BatchSize, BATCH_SIZES } from "@/data/cookies";
 
 export const revalidate = 3600;
 
@@ -48,6 +49,15 @@ export default async function ProductPage({
     id: item.cookie.slug,
     qty: item.qty ?? 0,
   }));
+
+  const canAddToBasket =
+    product.type === "seasonal" &&
+    product.isAvailable &&
+    product.boxSize != null &&
+    (BATCH_SIZES as readonly number[]).includes(product.boxSize);
+  const basketSubtotalCents = canAddToBasket
+    ? calcSubtotal(product.boxSize as BatchSize)
+    : 0;
 
   return (
     <>
@@ -134,14 +144,13 @@ export default async function ProductPage({
                     label="Build your box"
                     className="flex-1 items-center justify-center rounded-full bg-caramel px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-caramel/90"
                   />
-                ) : product.isAvailable && checkoutItems.length > 0 ? (
-                  <SeasonalCheckoutButton
-                    product={{
-                      name: product.name,
-                      priceLabel: product.priceLabel,
-                      boxSize: product.boxSize,
-                      checkoutItems,
-                    }}
+                ) : canAddToBasket ? (
+                  <AddToBasketButton
+                    slug={product.slug}
+                    name={product.name}
+                    subtotalCents={basketSubtotalCents}
+                    boxSize={product.boxSize!}
+                    className="flex flex-1 items-center justify-center rounded-full bg-caramel px-8 py-4 text-sm font-semibold text-white transition-colors hover:bg-caramel/90"
                   />
                 ) : product.isAvailable ? (
                   <a

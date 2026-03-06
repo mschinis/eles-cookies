@@ -101,10 +101,11 @@ export default async function TrackPage({
 
   const isCancelled = order.status === "cancelled";
 
-  const items = (order.items ?? []).map((item) => ({
-    name: (item.cookie as Cooky).name,
-    qty: item.qty,
-  }));
+  const isBasket = order.orderType === "basket";
+
+  const items = isBasket
+    ? (order.basketItems ?? []).map((item) => ({ name: item.productName, qty: item.qty }))
+    : (order.items ?? []).map((item) => ({ name: (item.cookie as Cooky).name, qty: item.qty }));
 
   return (
     <>
