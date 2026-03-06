@@ -32,15 +32,26 @@ export default async function SuccessPage({
 
   const meta = session.metadata ?? {};
   const customerName = meta.customerName ?? "there";
-  const batchSize = parseInt(meta.batchSize ?? "0", 10);
   const subtotalCents = parseInt(meta.subtotalCents ?? "0", 10);
   const shippingCents = parseInt(meta.shippingCents ?? "0", 10);
   const totalCents = subtotalCents + shippingCents;
-  const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");
-  const items = rawItems.map((item) => {
-    const cookie = cookieData.find((c) => c.id === item.id);
-    return { ...item, name: cookie?.name ?? item.id };
-  });
+
+  const isBasket = meta.orderType === "basket";
+  let items: { name: string; qty: number }[];
+  let batchSize: number;
+
+  if (isBasket) {
+    const rawItems: { slug: string; name: string; qty: number; boxSize: number }[] = JSON.parse(meta.items ?? "[]");
+    items = rawItems.map(({ name, qty }) => ({ name, qty }));
+    batchSize = rawItems.reduce((s, i) => s + i.boxSize * i.qty, 0);
+  } else {
+    const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");
+    items = rawItems.map((item) => {
+      const cookie = cookieData.find((c) => c.id === item.id);
+      return { name: cookie?.name ?? item.id, qty: item.qty };
+    });
+    batchSize = parseInt(meta.batchSize ?? "0", 10);
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-cream px-6 py-24">
@@ -81,7 +92,7 @@ export default async function SuccessPage({
           <div className="px-6 py-4">
             {items.map((item) => (
               <div
-                key={item.id}
+                key={item.name}
                 className="flex items-center justify-between py-2 text-sm"
               >
                 <span className="text-cocoa">{item.name}</span>
