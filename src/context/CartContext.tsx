@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 export type CartItem = {
   slug: string;
@@ -27,27 +27,64 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | null>(null);
 
-const STORAGE_KEY = "eles_basket";
+const SESSION_KEY = "eles_basket_session";
 const FREE_SHIPPING_THRESHOLD = 5000; // €50.00
 const SHIPPING_CENTS = 250;
+const SYNC_DEBOUNCE_MS = 800;
+
+function getOrCreateSessionId(): string {
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hydrate from localStorage once on mount
+  // Hydrate from server on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setItems(JSON.parse(stored));
-    } catch {}
-    setHydrated(true);
+    async function hydrate() {
+      const sessionId = getOrCreateSessionId();
+      sessionIdRef.current = sessionId;
+
+      try {
+        const res = await fetch("/api/basket", {
+          headers: { "x-basket-session": sessionId },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.items) && data.items.length > 0) {
+            setItems(data.items as CartItem[]);
+          }
+        }
+      } catch {}
+
+      setHydrated(true);
+    }
+    hydrate();
   }, []);
 
-  // Persist on change
+  // Debounced server sync on items change
   useEffect(() => {
-    if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    if (!hydrated || !sessionIdRef.current) return;
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => {
+      fetch("/api/basket", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-basket-session": sessionIdRef.current!,
+        },
+        body: JSON.stringify({ items }),
+      }).catch(() => {});
+    }, SYNC_DEBOUNCE_MS);
   }, [items, hydrated]);
 
   const add = useCallback((item: Omit<CartItem, "qty">) => {

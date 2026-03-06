@@ -67,6 +67,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    baskets: Basket;
     cookies: Cooky;
     media: Media;
     orders: Order;
@@ -79,6 +80,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    baskets: BasketsSelect<false> | BasketsSelect<true>;
     cookies: CookiesSelect<false> | CookiesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
@@ -119,6 +121,26 @@ export interface UserAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "baskets".
+ */
+export interface Basket {
+  id: string;
+  sessionId: string;
+  items?:
+    | {
+        slug: string;
+        name: string;
+        subtotalCents: number;
+        boxSize: number;
+        qty: number;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -369,6 +391,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'baskets';
+        value: string | Basket;
+      } | null)
+    | ({
         relationTo: 'cookies';
         value: string | Cooky;
       } | null)
@@ -429,6 +455,25 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "baskets_select".
+ */
+export interface BasketsSelect<T extends boolean = true> {
+  sessionId?: T;
+  items?:
+    | T
+    | {
+        slug?: T;
+        name?: T;
+        subtotalCents?: T;
+        boxSize?: T;
+        qty?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
