@@ -127,7 +127,8 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (err) {
-      console.error("Failed to save order to Payload:", err);
+      console.error("Failed to save order to Payload:", err instanceof Error ? err.message : err);
+      if (err instanceof Error && err.message) console.error(err.stack);
     }
 
     // ── Build email items list ─────────────────────────────────────────────────
@@ -138,17 +139,16 @@ export async function POST(req: NextRequest) {
       type BasketMeta = { slug: string; name: string; qty: number; boxSize: number };
       const basketMeta: BasketMeta[] = JSON.parse(meta.items ?? "[]");
       const customBoxCookiesForEmail: { id: string; qty: number }[] = JSON.parse(meta.customBoxCookies || "[]");
-      emailItems = [];
-      for (const i of basketMeta) {
+      emailItems = basketMeta.map((i) => {
         if (i.slug === "custom" && customBoxCookiesForEmail.length > 0) {
-          for (const cc of customBoxCookiesForEmail) {
-            const cookieName = cookieData.find((c) => c.id === cc.id)?.name ?? cc.id;
-            emailItems.push({ id: cc.id, qty: cc.qty * i.qty, name: cookieName });
-          }
-        } else {
-          emailItems.push({ id: i.slug, qty: i.qty, name: `${i.name} (${i.boxSize} cookies)` });
+          const subItems = customBoxCookiesForEmail.map((cc) => ({
+            name: cookieData.find((c) => c.id === cc.id)?.name ?? cc.id,
+            qty: cc.qty * i.qty,
+          }));
+          return { id: i.slug, qty: i.qty, name: i.name, subItems };
         }
-      }
+        return { id: i.slug, qty: i.qty, name: `${i.name} (${i.boxSize} cookies)` };
+      });
       batchSizeForEmail = basketMeta.reduce((s, i) => s + i.boxSize * i.qty, 0);
     } else {
       const rawItems: { id: string; qty: number }[] = JSON.parse(meta.items ?? "[]");

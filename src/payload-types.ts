@@ -220,11 +220,13 @@ export interface Order {
    */
   stripeSessionId: string;
   batchSize: number;
-  items: {
-    cookie: string | Cooky;
-    qty: number;
-    id?: string | null;
-  }[];
+  items?:
+    | {
+        cookie: string | Cooky;
+        qty: number;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Product-level line items for basket orders
    */

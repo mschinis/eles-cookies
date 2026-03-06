@@ -72,7 +72,6 @@ export const Orders: CollectionConfig = {
     {
       name: "items",
       type: "array",
-      required: true,
       fields: [
         {
           name: "cookie",

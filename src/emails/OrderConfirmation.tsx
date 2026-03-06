@@ -1,4 +1,4 @@
-type OrderItem = { id: string; qty: number; name?: string };
+type OrderItem = { id: string; qty: number; name?: string; subItems?: { name: string; qty: number }[] };
 
 type Props = {
   customerName: string;
@@ -21,11 +21,20 @@ export function renderOrderConfirmation(props: Props): string {
 
   const rows = items
     .map(
-      (item, i) => `
+      (item, i) => {
+        const subRows = item.subItems
+          ? item.subItems.map((sub) => `
+      <tr>
+        <td style="padding:4px 16px 4px 28px;font-size:12px;color:#3D231480">${sub.name}</td>
+        <td style="padding:4px 16px;font-size:12px;text-align:right;color:#3D231480">${sub.qty}</td>
+      </tr>`).join("")
+          : "";
+        return `
       <tr style="background:${i % 2 === 0 ? "#fff" : "#FAF6F1"}">
         <td style="padding:12px 16px;font-size:14px;color:#3D2314">${item.name ?? item.id}</td>
         <td style="padding:12px 16px;font-size:14px;text-align:right;color:#3D2314">${item.qty}</td>
-      </tr>`
+      </tr>${subRows}`;
+      }
     )
     .join("");
 
