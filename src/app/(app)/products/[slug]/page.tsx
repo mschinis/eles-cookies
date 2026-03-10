@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -12,6 +13,27 @@ import AddToBasketButton from "@/components/AddToBasketButton";
 import { calcSubtotal, type BatchSize, BATCH_SIZES } from "@/data/cookies";
 
 export const revalidate = 3600;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+  if (!product) return {};
+  const coverUrl = (product.coverImage as Media).url ?? undefined;
+  return {
+    title: product.name,
+    description: product.description,
+    openGraph: {
+      title: `${product.name} | Ele's Cookies`,
+      description: product.description,
+      url: `/products/${slug}`,
+      ...(coverUrl ? { images: [{ url: coverUrl, alt: product.name }] } : {}),
+    },
+  };
+}
 
 export async function generateStaticParams() {
   return [];

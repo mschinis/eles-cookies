@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -10,6 +11,18 @@ import type { Product, Media } from "@/payload-types";
 import { calcSubtotal, type BatchSize, BATCH_SIZES } from "@/data/cookies";
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  title: "Our Boxes",
+  description:
+    "Browse Ele's Cookies — handmade cookie boxes for every occasion. Build your own box, or choose from curated and seasonal collections. Delivered fresh across Cyprus.",
+  openGraph: {
+    title: "Our Boxes | Ele's Cookies",
+    description:
+      "Browse Ele's Cookies — handmade cookie boxes for every occasion. Build your own box, or choose from curated and seasonal collections. Delivered fresh across Cyprus.",
+    url: "/products",
+  },
+};
 
 async function getProducts() {
   const payload = await getPayload({ config });
@@ -29,6 +42,7 @@ function coverUrl(product: Product): string {
 export default async function ProductsPage() {
   const products = await getProducts();
   const customBox = products.find((p) => p.type === "custom");
+  const seasonalBoxes = products.filter((p) => p.type === "limited");
   const curatedBoxes = products.filter((p) => p.type === "seasonal");
 
   if (!customBox) {
@@ -113,6 +127,84 @@ export default async function ProductsPage() {
               </div>
             </div>
           </div>
+
+          {/* Seasonal boxes */}
+          {seasonalBoxes.length > 0 && (
+            <div className="mb-20">
+              <div className="mb-10">
+                <span className="mb-2 block text-sm font-medium uppercase tracking-widest text-caramel">
+                  Seasonal
+                </span>
+                <h2 className="font-display text-3xl font-bold text-cocoa">
+                  Limited-time boxes
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {seasonalBoxes.map((product) => {
+                  const canAddToBasket = product.isAvailable &&
+                    product.boxSize != null &&
+                    (BATCH_SIZES as readonly number[]).includes(product.boxSize);
+                  const subtotalCents = canAddToBasket
+                    ? calcSubtotal(product.boxSize as BatchSize)
+                    : 0;
+
+                  return (
+                    <div key={product.slug} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
+                      <Link href={`/products/${product.slug}`} className="block">
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                          <Image
+                            src={coverUrl(product)}
+                            alt={product.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          />
+                          {product.badge && (
+                            <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-cocoa backdrop-blur-sm">
+                              {product.badge}
+                            </span>
+                          )}
+                          {!product.isAvailable && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-cocoa/40">
+                              <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-semibold text-cocoa">
+                                Coming Soon
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-6 pb-4">
+                          <h3 className="mb-1 font-display text-lg font-semibold text-cocoa">{product.name}</h3>
+                          <p className="mb-3 line-clamp-2 text-xs text-cocoa/50">{product.description}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-caramel">{product.priceLabel}</span>
+                            {product.boxSize && <span className="text-xs text-cocoa/40">{product.boxSize} cookies</span>}
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="px-6 pb-6 pt-2">
+                        {canAddToBasket ? (
+                          <AddToBasketButton
+                            slug={product.slug}
+                            name={product.name}
+                            subtotalCents={subtotalCents}
+                            boxSize={product.boxSize!}
+                          />
+                        ) : (
+                          <Link
+                            href={`/products/${product.slug}`}
+                            className="block w-full rounded-full border border-sand py-3 text-center text-sm font-semibold text-cocoa/50 transition-colors hover:border-cocoa/20 hover:text-cocoa"
+                          >
+                            View details
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Curated collections */}
           <div>

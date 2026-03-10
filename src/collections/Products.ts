@@ -43,7 +43,8 @@ export const Products: CollectionConfig = {
       type: "select",
       required: true,
       options: [
-        { label: "Seasonal / Curated", value: "seasonal" },
+        { label: "Curated", value: "seasonal" },
+        { label: "Seasonal (Limited Time)", value: "limited" },
         { label: "Custom Box", value: "custom" },
       ],
     },

@@ -1,19 +1,21 @@
-"use client";
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import OrderForm from "@/components/OrderForm";
+import CanceledNotice from "./CanceledNotice";
 
-function CanceledNotice() {
-  const searchParams = useSearchParams();
-  if (searchParams.get("canceled") !== "1") return null;
-  return (
-    <div className="mb-8 rounded-xl border border-caramel/30 bg-caramel/10 px-6 py-4 text-sm text-cocoa">
-      Your payment was cancelled. No charge was made — feel free to try again.
-    </div>
-  );
-}
+export const metadata: Metadata = {
+  title: "Build Your Box",
+  description:
+    "Pick your batch size, mix your favourite flavours, and order handmade cookies delivered fresh to your door across Cyprus.",
+  openGraph: {
+    title: "Build Your Box | Ele's Cookies",
+    description:
+      "Pick your batch size, mix your favourite flavours, and order handmade cookies delivered fresh to your door across Cyprus.",
+    url: "/order",
+  },
+};
 
 export default function OrderPage() {
   return (

@@ -281,7 +281,7 @@ export interface Product {
    * URL-friendly identifier, e.g. valentines-collection
    */
   slug: string;
-  type: 'seasonal' | 'custom';
+  type: 'seasonal' | 'limited' | 'custom';
   name: string;
   tagline: string;
   description: string;

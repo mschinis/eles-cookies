@@ -17,10 +17,24 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://elescookies.com";
+
 export const metadata: Metadata = {
-  title: "Ele's Cookies — Handmade with love, baked to order",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "Ele's Cookies — Handmade with love, baked to order",
+    template: "%s | Ele's Cookies",
+  },
   description:
-    "Small-batch, made-to-order artisan cookies crafted with quality ingredients and a whole lot of heart.",
+    "Small-batch, made-to-order artisan cookies crafted with quality ingredients and a whole lot of heart. Delivered fresh across Cyprus.",
+  openGraph: {
+    siteName: "Ele's Cookies",
+    type: "website",
+    locale: "en_CY",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
